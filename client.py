@@ -15,7 +15,7 @@ import warnings
 from dataset import get_tokenizer_and_data_collator_and_propt_formatting
 import argparse
 
-PATH = '/home/zhazhang/Code/FL_LLMFT/OPTs/output/'
+PATH = '/home/cc/output/'
 
 parser = argparse.ArgumentParser(description="Flower")
 parser.add_argument(
