@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mkdir /home/cc/outputs/
+mkdir /home/cc/output/
 echo "server begin"
 
 python3 server.py &
