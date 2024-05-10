@@ -70,7 +70,7 @@ strategy = fl.server.strategy.FedAvg(
 )
 
 fl.server.start_server(
-        server_address="192.168.1.2:8000",
-        config=fl.server.ServerConfig(num_rounds=10000),
+        server_address="0.0.0.0:8000",
+        config=fl.server.ServerConfig(num_rounds=100),
         strategy=strategy,
     )
