@@ -17,6 +17,9 @@ import argparse
 
 PATH = '/home/cc/output/'
 
+if not os.path.exists(PATH):
+    os.mkdir(PATH)
+
 parser = argparse.ArgumentParser(description="Flower")
 parser.add_argument(
         "--partition-id",
