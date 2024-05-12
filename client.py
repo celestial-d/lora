@@ -146,7 +146,7 @@ client_trainset = (fds.load_partition(parser.parse_args().partition_id, "train")
 #client_trainset = client_trainset.rename_column("output", "Answer")
 
 fl.client.start_client(
-        server_address="192.168.21.114:8000", client=FlowerClient(
+        server_address="0.0.0.0:8000", client=FlowerClient(
             model_cfg=cfg.model,
             train_cfg=cfg.train,
             trainset=client_trainset,
