@@ -17,6 +17,11 @@ import argparse
 
 PATH = '/home/cc/output/'
 
+#profiler # define timer
+start = torch.cuda.Event(enable_timing=True)
+end = torch.cuda.Event(enable_timing=True)
+# # start pt
+start.record() 
 
 parser = argparse.ArgumentParser(description="Flower")
 parser.add_argument(
@@ -156,3 +161,10 @@ fl.client.start_client(
             save_path=PATH
             ).to_client()
     )
+
+# # Waits for everything to finish running
+torch.cuda.synchronize()
+end.record()
+
+# # print time
+print(start.elapsed_time(end))
