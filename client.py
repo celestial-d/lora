@@ -41,7 +41,7 @@ parser.add_argument(
         "artificially.",
     )
 
-os.environ["CUDA_VISIBLE_DEVICES"] = parser.parse_args().partition_id
+os.environ["CUDA_VISIBLE_DEVICES"] = str(parser.parse_args().partition_id)
 
 with initialize(config_path="conf"):
     cfg = compose(config_name="config")
