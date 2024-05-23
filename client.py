@@ -41,7 +41,7 @@ parser.add_argument(
         "artificially.",
     )
 
-os.evniron["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu
+os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu
 
 with initialize(config_path="conf"):
     cfg = compose(config_name="config")
