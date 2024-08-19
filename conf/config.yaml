@@ -15,9 +15,14 @@ dataset:
 #facebook/opt-13b
 #facebook/opt-30b
 model:
-  name: "facebook/opt-350m"
+  name: "gpt2"
   quantization: 8 # 8 or 4 if you want to do quantization with BitsAndBytes
+  cut_layer: 2
   gradient_checkpointing: True
+  transformer_module_name: transformer.h
+  layers_after_transformer:
+    - transformer.ln_f
+    - lm_head
   lora:
     peft_lora_r: 8
     peft_lora_alpha: 64

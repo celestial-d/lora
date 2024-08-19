@@ -9,7 +9,7 @@ from trl import SFTTrainer
 from transformers import TrainingArguments
 from peft import get_peft_model_state_dict, set_peft_model_state_dict
 from flwr_datasets import FederatedDataset
-from models import get_model, cosine_annealing
+from models import get_model_client, get_model, cosine_annealing
 import os
 import warnings
 from dataset import get_tokenizer_and_data_collator_and_propt_formatting
@@ -18,10 +18,10 @@ import argparse
 PATH = '/home/cc/output/'
 
 #profiler # define timer
-start = torch.cuda.Event(enable_timing=True)
-end = torch.cuda.Event(enable_timing=True)
+#start = torch.cuda.Event(enable_timing=True)
+#end = torch.cuda.Event(enable_timing=True)
 # # start pt
-start.record() 
+#start.record()
 
 parser = argparse.ArgumentParser(description="Flower")
 parser.add_argument(
@@ -91,7 +91,7 @@ class FlowerClient(
         self.save_path = save_path
 
         # instantiate model
-        self.model = get_model(model_cfg)
+        self.model = get_model_client(model_cfg)
 
         self.trainset = trainset
 
@@ -165,7 +165,7 @@ fl.client.start_client(
 
 # # Waits for everything to finish running
 torch.cuda.synchronize()
-end.record()
+#end.record()
 
 # # print time
-print(start.elapsed_time(end))
+#print(start.elapsed_time(end))

@@ -2,7 +2,7 @@ import os
 import warnings
 from hydra import compose, initialize
 import flwr as fl
-from models import get_model
+from models import get_model_server
 warnings.filterwarnings("ignore", category=UserWarning)
 #os.environ["CUDA_VISIBLE_DEVICES"]='-1'
 #torch.cuda.device_count()
@@ -30,7 +30,7 @@ def get_evaluate_fn(model_cfg, save_every_round, total_round, save_path):
             server_round == total_round or server_round % save_every_round == 0
         ):
             # Init model
-            model = get_model(model_cfg)
+            model = get_model_server(model_cfg)
             set_parameters(model, parameters)
 
             model.save_pretrained(f"{save_path}/peft_{server_round}")
