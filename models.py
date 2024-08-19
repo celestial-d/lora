@@ -88,7 +88,7 @@ def get_model_client(model_cfg: DictConfig):
         torch_dtype=torch.bfloat16,
     )
     transformer_module = model
-    cut_layer = -1
+    cut_layer = model_cfg.cut_layer
     print("#################")
     print(model_cfg)
     print("#################")
@@ -137,10 +137,19 @@ def get_model_server(model_cfg: DictConfig):
         )
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_cfg.name,
-        quantization_config=quantization_config,
-        torch_dtype=torch.bfloat16,
-    )
+            model_cfg.name,
+            quantization_config=quantization_config,
+            torch_dtype=torch.bfloat16,
+        )
+    transformer_module = model
+    cut_layer = model_cfg.cut_layer
+
+    for module_name in model_cfg.transformer_module_name.split("."):
+        transformer_module = getattr(transformer_module,module_name)
+    server_layers = transformer_module[cut_layer:]
+    server_module_names = model_cfg.transformer_module_name.split(".")
+    server_module = get_module(model, server_module_names[:-1])
+    setattr(server_module, server_module_names[-1], server_layers)
 
     model = prepare_model_for_kbit_training(
         model, use_gradient_checkpointing=model_cfg.gradient_checkpointing
@@ -152,7 +161,5 @@ def get_model_server(model_cfg: DictConfig):
         lora_dropout=0.075,
         task_type="CAUSAL_LM",
     )
-    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-    print(model)
-    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+    
     return get_peft_model(model, peft_config)
