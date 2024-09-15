@@ -91,7 +91,7 @@ class FlowerClient(
         self.save_path = save_path
 
         # instantiate model
-        self.model = get_model_client(model_cfg)
+        self.model = get_model(model_cfg)
 
         self.trainset = trainset
 

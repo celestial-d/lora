@@ -126,7 +126,7 @@ def get_model_server(model_cfg: DictConfig):
     Please refer to this example for `peft + BitsAndBytes`:
     https://github.com/huggingface/peft/blob/main/examples/fp4_finetuning/finetune_fp4_opt_bnb_peft.py
     """
-
+    """
     if model_cfg.quantization == 4:
         quantization_config = BitsAndBytesConfig(load_in_4bit=True)
     elif model_cfg.quantization == 8:
@@ -135,10 +135,10 @@ def get_model_server(model_cfg: DictConfig):
         raise ValueError(
             f"Use 4-bit or 8-bit quantization. You passed: {model_cfg.quantization}/"
         )
-
+    """
     model = AutoModelForCausalLM.from_pretrained(
             model_cfg.name,
-            quantization_config=quantization_config,
+            #quantization_config=quantization_config,
             torch_dtype=torch.bfloat16,
         )
     transformer_module = model
@@ -161,5 +161,5 @@ def get_model_server(model_cfg: DictConfig):
         lora_dropout=0.075,
         task_type="CAUSAL_LM",
     )
-    
+
     return get_peft_model(model, peft_config)

@@ -15,7 +15,7 @@ dataset:
 #facebook/opt-13b
 #facebook/opt-30b
 model:
-  name: "gpt2"
+  name: "facebook/opt-350m"
   quantization: 8 # 8 or 4 if you want to do quantization with BitsAndBytes
   cut_layer: 2
   gradient_checkpointing: True
