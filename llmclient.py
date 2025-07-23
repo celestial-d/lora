@@ -16,7 +16,7 @@ import argparse
 from llmmodels import get_model, set_parameters, get_parameters
 
 
-PATH = "/home/cc/output/"
+PATH = "./results/"
 
 parser = argparse.ArgumentParser(description="Flower")
 parser.add_argument(

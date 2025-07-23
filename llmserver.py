@@ -5,7 +5,7 @@ import flwr as fl
 from llmmodels import get_model, set_parameters, get_parameters  # make sure set_parameters is available
 warnings.filterwarnings("ignore", category=UserWarning)
 
-NUM_ROUNDS = 100
+NUM_ROUNDS = 10
 save_path = "./results/"
 
 # Load configuration

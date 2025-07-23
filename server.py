@@ -12,10 +12,9 @@ save_path = "./results/"
 
 with initialize(config_path="conf"):
     cfg = compose(config_name="config")
-
 # Reset the number of number
-cfg.num_rounds = NUM_ROUNDS
-cfg.train.num_rounds = NUM_ROUNDS
+#cfg.num_rounds = NUM_ROUNDS
+#cfg.train.num_rounds = NUM_ROUNDS
 
 # Create output directory
 if not os.path.exists(save_path):
