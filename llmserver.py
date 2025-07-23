@@ -2,7 +2,7 @@ import os
 import warnings
 from hydra import compose, initialize
 import flwr as fl
-from models import get_model, set_parameters  # make sure set_parameters is available
+from llmmodels import get_model, set_parameters, get_parameters  # make sure set_parameters is available
 warnings.filterwarnings("ignore", category=UserWarning)
 
 NUM_ROUNDS = 100

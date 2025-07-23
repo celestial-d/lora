@@ -42,13 +42,22 @@ def get_model(model_cfg: DictConfig):
 
 
 def get_parameters(model: torch.nn.Module) -> list:
-    """Extract model parameters as a list of NumPy arrays for FL."""
-    return [val.cpu().numpy() for _, val in model.state_dict().items()]
+    return [
+        val.detach().cpu().to(torch.float32).numpy()
+        if val.dtype == torch.bfloat16 else val.detach().cpu().numpy()
+        for val in model.state_dict().values()
+    ]
 
 
 def set_parameters(model: torch.nn.Module, parameters: list) -> None:
-    """Set model parameters from a list of NumPy arrays (used in FL)."""
     state_dict = model.state_dict()
     for key, val in zip(state_dict.keys(), parameters):
-        state_dict[key] = torch.tensor(val)
+        tensor_val = torch.tensor(val)
+
+        # Cast back to original dtype if needed
+        if state_dict[key].dtype != tensor_val.dtype:
+            tensor_val = tensor_val.to(state_dict[key].dtype)
+
+        state_dict[key] = tensor_val
     model.load_state_dict(state_dict, strict=True)
+

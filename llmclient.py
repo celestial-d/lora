@@ -13,6 +13,8 @@ import os
 import warnings
 from llmdataset import get_tokenizer_and_data_collator_and_propt_formatting
 import argparse
+from llmmodels import get_model, set_parameters, get_parameters
+
 
 PATH = "/home/cc/output/"
 
@@ -44,15 +46,6 @@ fds = FederatedDataset(
 )
 tokenizer, data_collator, formatting_prompts_func = get_tokenizer_and_data_collator_and_propt_formatting(cfg.model.name)
 
-# Parameter helper functions (no LoRA)
-def get_parameters(model: torch.nn.Module) -> NDArrays:
-    return [val.cpu().numpy() for _, val in model.state_dict().items()]
-
-def set_parameters(model: torch.nn.Module, parameters: NDArrays) -> None:
-    state_dict = model.state_dict()
-    for key, val in zip(state_dict.keys(), parameters):
-        state_dict[key] = torch.tensor(val)
-    model.load_state_dict(state_dict, strict=True)
 
 # Flower client definition
 class FlowerClient(fl.client.NumPyClient):
