@@ -5,7 +5,7 @@ num_clients: 2 # total number of clients
 num_rounds: 100
 
 dataset:
-  name: "lucasmccabe-lmi/CodeAlpaca-20k"
+  name: "sahil2801/CodeAlpaca-20k"
 #timdettmers/openassistant-guanaco
 #stanfordnlp/imdb 
 #lucasmccabe-lmi/CodeAlpaca-20k
@@ -15,7 +15,7 @@ dataset:
 #facebook/opt-13b
 #facebook/opt-30b
 model:
-  name: "facebook/opt-350m"
+  name: "facebook/opt-125m"
   quantization: 8 # 8 or 4 if you want to do quantization with BitsAndBytes
   cut_layer: 2
   gradient_checkpointing: True
