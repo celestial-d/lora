@@ -16,9 +16,8 @@ dataset:
 #facebook/opt-30b
 model:
   name: "facebook/opt-125m"
-  quantization: 8 # 8 or 4 if you want to do quantization with BitsAndBytes
-  cut_layer: 2
-  gradient_checkpointing: True
+  quantization: 4 # 8 or 4 if you want to do quantization with BitsAndBytes
+  gradient_checkpointing: False
   transformer_module_name: transformer.h
   layers_after_transformer:
     - transformer.ln_f

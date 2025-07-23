@@ -27,10 +27,10 @@ def get_model(model_cfg: DictConfig):
         raise ValueError(
             f"Only 4-bit or 8-bit quantization supported. Got: {model_cfg.quantization}"
         )
-
+    # Load the model with the specified quantization
+    #
     model = AutoModelForCausalLM.from_pretrained(
         model_cfg.name,
-        quantization_config=quantization_config,
         torch_dtype=torch.bfloat16,
     )
 

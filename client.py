@@ -15,7 +15,7 @@ import warnings
 from dataset import get_tokenizer_and_data_collator_and_propt_formatting
 import argparse
 
-PATH = '/home/cc/output/'
+PATH = './results/'
 
 #profiler # define timer
 #start = torch.cuda.Event(enable_timing=True)
