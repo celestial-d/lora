@@ -112,7 +112,7 @@ client_trainset = fds.load_partition(args.partition_id, "train")
 
 # Start Flower client
 fl.client.start_client(
-    server_address="0.0.0.0:8000",
+    server_address="localhost:8000",
     client=FlowerClient(
         model_cfg=cfg.model,
         train_cfg=cfg.train,
