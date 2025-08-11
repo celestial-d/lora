@@ -103,7 +103,7 @@ class FlowerClient(fl.client.NumPyClient):
         # Debug: parameter shape and total size
         param_list = self.get_parameters({})
         total_param = sum(p.size for p in param_list)
-        print(f"Parameter count: {len(param_list)}, total size: {total_param * 16 / 1e9:.2f} Gb")
+        print(f"Parameter count: {len(param_list)}, total size: {total_param * 32.0 / 1e9:.2f} Gb")
 
         return param_list, len(self.trainset), {"train_loss": results.training_loss}
 
@@ -112,7 +112,7 @@ client_trainset = fds.load_partition(args.partition_id, "train")
 
 # Start Flower client
 fl.client.start_client(
-    server_address="localhost:8000",
+        server_address="10.1.1.171:8000",
     client=FlowerClient(
         model_cfg=cfg.model,
         train_cfg=cfg.train,
@@ -121,7 +121,7 @@ fl.client.start_client(
         formatting_prompts_func=formatting_prompts_func,
         data_collator=data_collator,
         save_path=PATH,
-    ).to_client()
+    ).to_client(),
 )
 
 torch.cuda.synchronize()

@@ -9,14 +9,17 @@ dataset:
 #timdettmers/openassistant-guanaco
 #stanfordnlp/imdb 
 #lucasmccabe-lmi/CodeAlpaca-20k
+#facebook/opt-125m
+#facebook/opt-350m
+#bigscience/bloom-560m
 #facebook/opt-1.3b
 #facebook/opt-2.7b
 #facebook/opt-6.7b
 #facebook/opt-13b
 #facebook/opt-30b
 model:
-  name: "facebook/opt-125m"
-  quantization: 4 # 8 or 4 if you want to do quantization with BitsAndBytes
+  name: "bigscience/bloom-560m"
+  quantization: 8 # 8 or 4 if you want to do quantization with BitsAndBytes
   gradient_checkpointing: False
   transformer_module_name: transformer.h
   layers_after_transformer:
