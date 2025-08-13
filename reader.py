@@ -67,9 +67,9 @@ def main():
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     torch.cuda.set_device(local_rank)
 
-    tokenizer = AutoTokenizer.from_pretrained("facebook/opt-2.7b", padding_side="right")
+    tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m", padding_side="right")
     tokenizer.pad_token = tokenizer.eos_token
-    model = AutoModelForCausalLM.from_pretrained("facebook/opt-2.7b", torch_dtype=torch.float16)
+    model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m", torch_dtype=torch.float16)
     if hasattr(model, "config"):
         model.config.use_cache = False  # silence ckpt warning
 

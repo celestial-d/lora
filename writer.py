@@ -22,7 +22,7 @@ def log(msg):
     print(f"[Writer] {msg}", flush=True)
 
 log("Loading OPT-2.7B...")
-model = AutoModelForCausalLM.from_pretrained("facebook/opt-2.7b", torch_dtype=torch.float16)
+model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m", torch_dtype=torch.float16)
 sd = model.state_dict()
 flat = torch.cat([p.detach().flatten().cpu().to(torch.float16) for p in sd.values()]).numpy()
 
