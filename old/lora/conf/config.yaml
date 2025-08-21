@@ -18,7 +18,7 @@ dataset:
 #facebook/opt-13b
 #facebook/opt-30b
 model:
-  name: "facebook/opt-125m"
+  name: "facebook/opt-1.3b"
   quantization: 8 # 8 or 4 if you want to do quantization with BitsAndBytes
   gradient_checkpointing: False
   transformer_module_name: transformer.h
