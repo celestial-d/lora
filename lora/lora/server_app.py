@@ -9,8 +9,8 @@ from flwr.server import ServerApp, ServerAppComponents, ServerConfig
 from flwr.server.strategy import FedAvg
 from omegaconf import DictConfig
 
-from flowertune_llm.models import get_model, get_parameters, set_parameters
-from flowertune_llm.dataset import replace_keys
+from lora.models import get_model, get_parameters, set_parameters
+from lora.dataset import replace_keys
 
 
 # Get function that will be executed by the strategy's evaluate() method

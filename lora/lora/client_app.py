@@ -14,12 +14,12 @@ from omegaconf import DictConfig
 from transformers import TrainingArguments
 from trl import SFTTrainer
 
-from flowertune_llm.dataset import (
+from lora.dataset import (
     get_tokenizer_and_data_collator_and_propt_formatting,
     load_data,
     replace_keys,
 )
-from flowertune_llm.models import (
+from lora.models import (
     cosine_annealing,
     get_model,
     set_parameters,
