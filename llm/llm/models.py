@@ -1,77 +1,108 @@
+# models.py  (dense full fine-tuning; no LoRA, no quantization)
+
 import math
+from collections import OrderedDict
+from typing import List
 
 import torch
 from omegaconf import DictConfig
-from collections import OrderedDict
-from peft import (
-    LoraConfig,
-    get_peft_model,
-    get_peft_model_state_dict,
-    set_peft_model_state_dict,
-)
-from peft.utils import prepare_model_for_kbit_training
-from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoModelForCausalLM
 
 from flwr.common.typing import NDArrays
 
 
+# -----------------------
+# LR schedule (unchanged)
+# -----------------------
 def cosine_annealing(
     current_round: int,
     total_round: int,
     lrate_max: float = 0.001,
     lrate_min: float = 0.0,
 ) -> float:
-    """Implement cosine annealing learning rate schedule."""
-
     cos_inner = math.pi * current_round / total_round
     return lrate_min + 0.5 * (lrate_max - lrate_min) * (1 + math.cos(cos_inner))
 
 
+# -----------------------
+# Model loader (dense)
+# -----------------------
+def _str_to_dtype(name: str) -> torch.dtype:
+    name = (name or "fp16").lower()
+    if name in ("fp16", "float16", "half"):
+        return torch.float16
+    if name in ("bf16", "bfloat16"):
+        return torch.bfloat16
+    if name in ("fp32", "float32"):
+        return torch.float32
+    # default
+    return torch.float16
+
+
 def get_model(model_cfg: DictConfig):
-    """Load model with appropriate quantization config and other optimizations.
-
-    Please refer to this example for `peft + BitsAndBytes`:
-    https://github.com/huggingface/peft/blob/main/examples/fp4_finetuning/finetune_fp4_opt_bnb_peft.py
     """
+    Load a dense CausalLM model for full fine-tuning (no LoRA, no quantization).
 
-    if model_cfg.quantization == 4:
-        quantization_config = BitsAndBytesConfig(load_in_4bit=True)
-    elif model_cfg.quantization == 8:
-        quantization_config = BitsAndBytesConfig(load_in_8bit=True)
-    else:
-        raise ValueError(
-            f"Use 4-bit or 8-bit quantization. You passed: {model_cfg.quantization}/"
-        )
+    Expected (non-strict) fields in model_cfg:
+      - name: str (HF repo or path)
+      - dtype: "fp16" | "bf16" | "fp32"   (optional; default "fp16")
+      - gradient_checkpointing: bool      (optional; default True)
+      - attn_implementation: "sdpa"|"eager"|"flash_attention_2" (optional; default "sdpa")
+    """
+    name = getattr(model_cfg, "name", None)
+    if not name:
+        raise ValueError("model_cfg.name must be set (HF model id or local path)")
+
+    dtype = _str_to_dtype(getattr(model_cfg, "dtype", "fp16"))
+    grad_ckpt = bool(getattr(model_cfg, "gradient_checkpointing", True))
+    attn_impl = getattr(model_cfg, "attn_implementation", "sdpa")
 
     model = AutoModelForCausalLM.from_pretrained(
-        model_cfg.name,
-        quantization_config=quantization_config,
-        torch_dtype=torch.bfloat16,
+        name,
+        torch_dtype=dtype,
+        low_cpu_mem_usage=True,
+        trust_remote_code=True,
+        attn_implementation=attn_impl,
     )
 
-    model = prepare_model_for_kbit_training(
-        model, use_gradient_checkpointing=model_cfg.gradient_checkpointing
-    )
+    # Good practice for training
+    model.config.use_cache = False
+    if grad_ckpt:
+        model.gradient_checkpointing_enable()
 
-    peft_config = LoraConfig(
-        r=model_cfg.lora.peft_lora_r,
-        lora_alpha=model_cfg.lora.peft_lora_alpha,
-        lora_dropout=0.075,
-        task_type="CAUSAL_LM",
-    )
+    return model
 
-    return get_peft_model(model, peft_config)
+
+# -----------------------
+# Param <-> ndarray utils
+# -----------------------
+def get_parameters(model) -> NDArrays:
+    """
+    Return full model parameters as a list of numpy arrays.
+    Transport in fp16 by default to reduce size (not quantization, just dtype cast).
+    """
+    arrays: List = []
+    with torch.no_grad():
+        for _, t in model.state_dict().items():
+            arrays.append(t.detach().cpu().contiguous().to(torch.float16).numpy())
+    return arrays
 
 
 def set_parameters(model, parameters: NDArrays) -> None:
-    """Change the parameters of the model using the given ones."""
-    peft_state_dict_keys = get_peft_model_state_dict(model).keys()
-    params_dict = zip(peft_state_dict_keys, parameters)
-    state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-    set_peft_model_state_dict(model, state_dict)
+    """
+    Load full model parameters from a list of numpy arrays.
+    We cast back to each tensor's original dtype from the current model.
+    """
+    sd = model.state_dict()
+    if len(sd) != len(parameters):
+        raise ValueError(f"Mismatched tensor count: model has {len(sd)}, got {len(parameters)}")
 
+    new_sd = OrderedDict()
+    for (k, t), arr in zip(sd.items(), parameters):
+        ten = torch.from_numpy(arr).to(dtype=t.dtype)
+        new_sd[k] = ten
 
-def get_parameters(model) -> NDArrays:
-    """Return the parameters of the current net."""
-    state_dict = get_peft_model_state_dict(model)
-    return [val.cpu().numpy() for _, val in state_dict.items()]
+    missing, unexpected = model.load_state_dict(new_sd, strict=False)
+    if missing or unexpected:
+        # Usually should be empty; keep a gentle check
+        raise RuntimeError(f"State dict load mismatch. Missing: {missing}, Unexpected: {unexpected}")
