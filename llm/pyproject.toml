@@ -33,16 +33,17 @@ serverapp = "llm.server_app:app"
 clientapp = "llm.client_app:app"
 
 [tool.flwr.app.config]
-dataset.name = "vicgalle/alpaca-gpt4"
+dataset.name = "sahil2801/CodeAlpaca-20k"
 model.name = "facebook/opt-125m"
 model.gradient-checkpointing = true
+model.quantization = 4
 train.save-every-round = 5
 train.learning-rate-max = 5e-5
 train.learning-rate-min = 1e-6
 train.seq-length = 512
 train.training-arguments.output-dir = ""
 train.training-arguments.learning-rate = ""
-train.training-arguments.per-device-train-batch-size = 160
+train.training-arguments.per-device-train-batch-size = 16
 train.training-arguments.gradient-accumulation-steps = 1
 train.training-arguments.logging-steps = 10
 train.training-arguments.num-train-epochs = 3

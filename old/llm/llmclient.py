@@ -124,4 +124,4 @@ fl.client.start_client(
     ).to_client()
 )
 
-torch.cuda.synchronize()
+#torch.cuda.synchronize()

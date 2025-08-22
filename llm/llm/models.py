@@ -9,7 +9,7 @@ from omegaconf import DictConfig
 from transformers import AutoModelForCausalLM
 
 from flwr.common.typing import NDArrays
-
+from transformers import BitsAndBytesConfig
 
 # -----------------------
 # LR schedule (unchanged)
@@ -57,6 +57,15 @@ def get_model(model_cfg: DictConfig):
     grad_ckpt = bool(getattr(model_cfg, "gradient_checkpointing", True))
     attn_impl = getattr(model_cfg, "attn_implementation", "sdpa")
 
+    # if model_cfg.quantization == 4:
+    #     quantization_config = BitsAndBytesConfig(load_in_4bit=True)
+    # elif model_cfg.quantization == 8:
+    #     quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+    # else:
+    #     raise ValueError(
+    #         f"Only 4-bit or 8-bit quantization supported. Got: {model_cfg.quantization}"
+    #     )
+
     model = AutoModelForCausalLM.from_pretrained(
         name,
         torch_dtype=dtype,
@@ -76,33 +85,22 @@ def get_model(model_cfg: DictConfig):
 # -----------------------
 # Param <-> ndarray utils
 # -----------------------
-def get_parameters(model) -> NDArrays:
-    """
-    Return full model parameters as a list of numpy arrays.
-    Transport in fp16 by default to reduce size (not quantization, just dtype cast).
-    """
-    arrays: List = []
-    with torch.no_grad():
-        for _, t in model.state_dict().items():
-            arrays.append(t.detach().cpu().contiguous().to(torch.float16).numpy())
-    return arrays
+def get_parameters(model: torch.nn.Module) -> list:
+    return [
+        val.detach().cpu().to(torch.float16).numpy()
+        if val.dtype == torch.bfloat16 else val.detach().cpu().numpy()
+        for val in model.state_dict().values()
+    ]
 
 
-def set_parameters(model, parameters: NDArrays) -> None:
-    """
-    Load full model parameters from a list of numpy arrays.
-    We cast back to each tensor's original dtype from the current model.
-    """
-    sd = model.state_dict()
-    if len(sd) != len(parameters):
-        raise ValueError(f"Mismatched tensor count: model has {len(sd)}, got {len(parameters)}")
+def set_parameters(model: torch.nn.Module, parameters: list) -> None:
+    state_dict = model.state_dict()
+    for key, val in zip(state_dict.keys(), parameters):
+        tensor_val = torch.tensor(val)
 
-    new_sd = OrderedDict()
-    for (k, t), arr in zip(sd.items(), parameters):
-        ten = torch.from_numpy(arr).to(dtype=t.dtype)
-        new_sd[k] = ten
+        # Cast back to original dtype if needed
+        if state_dict[key].dtype != tensor_val.dtype:
+            tensor_val = tensor_val.to(state_dict[key].dtype)
 
-    missing, unexpected = model.load_state_dict(new_sd, strict=False)
-    if missing or unexpected:
-        # Usually should be empty; keep a gentle check
-        raise RuntimeError(f"State dict load mismatch. Missing: {missing}, Unexpected: {unexpected}")
+        state_dict[key] = tensor_val
+    model.load_state_dict(state_dict, strict=True)
