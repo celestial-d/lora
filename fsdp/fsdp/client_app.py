@@ -1,309 +1,291 @@
-"""flowertune-llm: A Flower / FlowerTune client (dense FT, no LoRA/quant).
-BF16-first precision policy with diagnostics and NaN guard.
+"""
+flowertune-llm (writer/controller): New-style Flower ClientApp that orchestrates
+an external FSDP trainer via shared memory (fp16) + flag files.
+
+- Uses ClientApp/NumPyClient/Context (Flower ≥1.19)
+- Client keeps a plain (non-FSDP) model only to size/serialize state_dict
+- FSDP lives in a separate torchrun process (fsdp_trainer.py) which:
+    * waits for flags,
+    * runs a train/eval burst,
+    * writes FULL_STATE_DICT back to SHM,
+    * writes metrics.json, and
+    * idles until the next signal.
+
+Make sure to start fsdp_trainer.py separately with the SAME SHM_NAME/FLAG_DIR.
 """
 
+from __future__ import annotations
 import os
-import math
+import time
+import json
 import warnings
 from typing import Dict, Tuple
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
+
 from flwr.client import ClientApp, NumPyClient
 from flwr.common import Context
 from flwr.common.config import unflatten_dict
 from flwr.common.typing import NDArrays, Scalar
 from omegaconf import DictConfig
 
-from transformers import TrainingArguments
-from trl import SFTTrainer
+# Plain (non-FSDP) helpers on the client
+from fsdp.models import get_model, set_parameters, get_parameters
+from fsdp.dataset import load_data, replace_keys
 
-from fsdp.dataset import (
-    get_tokenizer_and_data_collator_and_propt_formatting,
-    load_data,
-    replace_keys,
-)
-from fsdp.models import (
-    cosine_annealing,
-    get_model,
-    set_parameters,
-    get_parameters,
-)
-
-# Avoid noisy warnings
-os.environ["TOKENIZERS_PARALLELISM"] = "true"
-os.environ["RAY_DISABLE_DOCKER_CPU_WARNING"] = "1"
-warnings.filterwarnings("ignore", category=UserWarning)
+from multiprocessing import shared_memory
 
 
-def _human_bytes(n: int) -> str:
-    for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if n < 1024 or unit == "TB":
-            return f"{n:.2f} {unit}" if unit != "B" else f"{n} {unit}"
-        n /= 1024
-    return f"{n:.2f} TB"
+# ---------------------------
+# Shared-memory bridge (fp16)
+# ---------------------------
+class ShmBridge:
+    def __init__(self, shm_name: str, flag_dir: str, model: torch.nn.Module, dtype=np.float16):
+        self.shm_name = shm_name
+        self.flag_dir = flag_dir
+        self.dtype = dtype
+        os.makedirs(flag_dir, exist_ok=True)
+
+        sd = model.state_dict()
+        self._keys = list(sd.keys())
+        self._numels = [sd[k].numel() for k in self._keys]
+        self._total = int(sum(self._numels))
+
+        self._nbytes = np.dtype(self.dtype).itemsize * self._total
+        try:
+            self.shm = shared_memory.SharedMemory(name=self.shm_name, create=True, size=self._nbytes)
+            print(f"[client] Created SHM '{self.shm_name}' with {self._nbytes/1e6:.2f} MB")
+        except FileExistsError:
+            self.shm = shared_memory.SharedMemory(name=self.shm_name, create=False)
+            if self.shm.size < self._nbytes:
+                raise RuntimeError(
+                    f"Existing SHM '{self.shm_name}' too small: {self.shm.size} < {self._nbytes}"
+                )
+            print(f"[client] Connected to existing SHM '{self.shm_name}' ({self.shm.size/1e6:.2f} MB)")
+
+        self.flag_ready = os.path.join(self.flag_dir, "ready.flag")
+        self.flag_done  = os.path.join(self.flag_dir, "done.flag")
+        self.flag_mode  = os.path.join(self.flag_dir, "mode.flag")
+        self.metrics_json = os.path.join(self.flag_dir, "metrics.json")
+
+    def _flat_view(self):
+        return np.ndarray((self._total,), dtype=self.dtype, buffer=self.shm.buf)
+
+    def write_mode(self, mode: str):
+        with open(self.flag_mode, "w") as f:
+            f.write(mode); f.flush(); os.fsync(f.fileno())
+
+    def signal_ready(self):
+        with open(self.flag_ready, "w") as f:
+            f.write("ready"); f.flush(); os.fsync(f.fileno())
+
+    def wait_done(self, poll: float = 0.1, timeout: float | None = None):
+        start = time.time()
+        while not os.path.exists(self.flag_done):
+            time.sleep(poll)
+            if timeout is not None and (time.time() - start) > timeout:
+                raise TimeoutError("Timed out waiting for done.flag")
+
+    def clear_flags(self):
+        for p in (self.flag_done, self.flag_ready, self.flag_mode):
+            try:
+                os.remove(p)
+            except FileNotFoundError:
+                pass
+
+    def write_model_to_shm(self, model: torch.nn.Module):
+        sd = model.state_dict()
+        flat = self._flat_view()
+        ptr = 0
+        for k, n in zip(self._keys, self._numels):
+            v = (
+                sd[k].detach().to("cpu").to(torch.float16)
+                .contiguous().view(-1).numpy()
+            )
+            flat[ptr:ptr+n] = v
+            ptr += n
+
+    def load_model_from_shm(self, model: torch.nn.Module):
+        sd = model.state_dict()
+        flat = self._flat_view()
+        ptr = 0
+        new_sd = {}
+        for k, n in zip(self._keys, self._numels):
+            p = sd[k]
+            chunk = torch.from_numpy(flat[ptr:ptr+n].copy()).view(p.shape).to(p.dtype).contiguous()
+            new_sd[k] = chunk
+            ptr += n
+        model.load_state_dict(new_sd, strict=True)
+
+    def read_metrics(self) -> dict:
+        try:
+            with open(self.metrics_json, "r") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
+        except Exception as e:
+            print(f"[client] Warning: failed to read metrics.json: {e}")
+            return {}
+
+    def rm_metrics(self):
+        try:
+            os.remove(self.metrics_json)
+        except FileNotFoundError:
+            pass
+
+    def close(self, unlink: bool = False):
+        try:
+            self.shm.close()
+        except Exception:
+            pass
+        if unlink:
+            try:
+                self.shm.unlink()
+            except Exception:
+                pass
 
 
-def _summarize_model_size(model: torch.nn.Module) -> Dict[str, object]:
-    sd = model.state_dict()
-    total_params = 0
-    total_bytes = 0
-    per_dtype_bytes: Dict[str, int] = {}
-    largest_name = None
-    largest_bytes = 0
-    for name, t in sd.items():
-        numel = t.numel()
-        total_params += numel
-        b = numel * t.element_size()
-        total_bytes += b
-        dt = str(t.dtype).replace("torch.", "")
-        per_dtype_bytes[dt] = per_dtype_bytes.get(dt, 0) + b
-        if b > largest_bytes:
-            largest_bytes = b
-            largest_name = name
-    transport_bytes_fp16 = sum(t.numel() * 2 for t in sd.values())
-    return {
-        "total_params": total_params,
-        "total_bytes": total_bytes,
-        "per_dtype_bytes": per_dtype_bytes,
-        "largest_name": largest_name,
-        "largest_bytes": largest_bytes,
-        "transport_bytes_fp16": transport_bytes_fp16,
-    }
-
-
-def _count_supervised_tokens(tokenizer, data_collator, formatting_fn, dataset, seq_len: int) -> int:
-    """Build one real batch using the exact collator/formatter and count non-masked labels."""
-    if len(dataset) == 0:
-        return 0
-    take = min(4, len(dataset))
-    subset = dataset.select(range(take))
-
-    def _as_dict_of_lists(batch_list):
-        keys = batch_list[0].keys()
-        return {k: [row[k] for row in batch_list] for k in keys}
-
-    def _cf(batch_list):
-        batch_dict = _as_dict_of_lists(batch_list)
-        texts = formatting_fn(batch_dict)
-        enc = tokenizer(texts, padding=True, truncation=True, max_length=seq_len, return_tensors="pt")
-        examples = [{k: enc[k][i] for k in enc} for i in range(enc["input_ids"].size(0))]
-        return data_collator(examples)
-
-    dl = DataLoader(subset, batch_size=min(2, take), shuffle=False, collate_fn=_cf)
-    batch = next(iter(dl))
-    labels = batch.get("labels", None)
-    if labels is None:
-        return 0
-    return int((labels != -100).sum().item())
-
-
-def _has_nan_or_inf(arrs: NDArrays) -> bool:
-    for a in arrs:
-        if not np.isfinite(a).all():
-            return True
-    return False
-
-
+# ---------------------------
+# Flower NumPyClient (writer)
+# ---------------------------
 class FlowerClient(NumPyClient):
-    """Flower client for dense full-model fine-tuning (no LoRA, no quantization)."""
+    """Controller client: sends/receives weights via SHM and signals the FSDP trainer."""
 
     def __init__(
         self,
         model_cfg: DictConfig,
-        train_cfg: DictConfig,
-        trainset,
-        tokenizer,
-        formatting_prompts_func,
-        data_collator,
+        dataset_name: str,
         num_rounds: int,
         partition_id: int,
+        num_partitions: int,
+        save_path: str = "./results",
     ):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model_cfg = model_cfg
-        self.train_cfg = train_cfg
-        self.training_arguments = TrainingArguments(**train_cfg.training_arguments)
-        self.tokenizer = tokenizer
-        self.formatting_prompts_func = formatting_prompts_func
-        self.data_collator = data_collator
-        self.num_rounds = num_rounds
-        self.trainset = trainset
         self.partition_id = partition_id
+        self.num_rounds = num_rounds
+        self.dataset_name = dataset_name
+        self.save_path = save_path
 
-        # Reveal NaNs during debugging (set True later for clean logs if you want)
-        if getattr(self.training_arguments, "logging_nan_inf_filter", None) is None:
-            self.training_arguments.logging_nan_inf_filter = False
-        if getattr(self.training_arguments, "max_grad_norm", None) is None:
-            self.training_arguments.max_grad_norm = 1.0
-
-        # Instantiate dense model
+        # Plain model for state_dict compatibility (FSDP lives in separate proc)
         self.model = get_model(model_cfg)
+        if torch.cuda.is_available():
+            self.model = self.model.to("cuda")
 
-        # Prefer BF16 if supported; else fall back to AMP-FP16
-        self._prefer_bf16_else_amp_fp16()
+        # Set up SHM + flags (one segment per client)
+        shm_name = f"opt_client_{partition_id}"
+        flag_dir = os.path.abspath(f"./flags_client_{partition_id}")
+        self.shm = ShmBridge(shm_name, flag_dir, self.model, dtype=np.float16)
 
-    def _prefer_bf16_else_amp_fp16(self) -> None:
-        """
-        BF16-first precision policy:
-          - If GPU supports BF16, cast model to BF16 and set Trainer.bf16=True (no GradScaler).
-          - Else, fall back to AMP-FP16: cast model to FP32 and set Trainer.fp16=True (with GradScaler).
-        """
-        bf16_ok = False
-        try:
-            bf16_ok = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
-        except AttributeError:
-            # Fallback heuristic: Ampere/Hopper+ typically support BF16
-            cap = torch.cuda.get_device_capability(0) if torch.cuda.is_available() else (0, 0)
-            bf16_ok = cap[0] >= 8  # SM80+
+        # Tell/confirm env used by fsdp_trainer.py (launched separately)
+        os.environ["SHM_NAME"] = shm_name
+        os.environ["FLAG_DIR"] = flag_dir
+        print(f"[client] SHM_NAME={shm_name} FLAG_DIR={flag_dir}")
 
-        if bf16_ok:
-            print(f"[client {self.partition_id}] Using BF16: casting model to torch.bfloat16 and enabling Trainer.bf16")
-            self.model = self.model.to(torch.bfloat16)
-            self.training_arguments.bf16 = True
-            self.training_arguments.fp16 = False
-        else:
-            print(f"[client {self.partition_id}] BF16 not supported; falling back to AMP-FP16 (cast model->fp32, Trainer.fp16=True)")
-            self.model = self.model.to(torch.float32)
-            self.training_arguments.fp16 = True
-            self.training_arguments.bf16 = False
+        # For reporting sample count to Flower (training itself is remote)
+        # If your fsdp_trainer uses the same dataset and partitioning, match it here.
+        self.num_examples = len(load_data(partition_id, num_partitions, dataset_name))
+
+        # Optional: keep last metrics read from trainer
+        self._last_metrics: Dict[str, float] = {}
+
+    # ---- Flower NumPyClient API ----
+    def get_parameters(self, config: Dict[str, Scalar]) -> NDArrays:
+        arrs = get_parameters(self.model)
+        mb = sum(a.nbytes for a in arrs) / 1e6
+        print(f"[client {self.partition_id}] get_parameters -> {len(arrs)} arrays, {mb:.2f} MB")
+        return arrs
 
     def fit(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[NDArrays, int, Dict]:
-        """One FL local training round."""
-        # Load global weights
+        # 1) Load global weights into our plain model
         set_parameters(self.model, parameters)
 
-        # Per-round cosine LR
-        round_id = int(config["current_round"])
-        new_lr = cosine_annealing(
-            round_id,
-            self.num_rounds,
-            self.train_cfg.learning_rate_max,
-            self.train_cfg.learning_rate_min,
-        )
+        # 2) Write to SHM
+        self.shm.write_model_to_shm(self.model)
 
-        # Unique output dir per client & round to avoid HF auto-resume
-        outdir = os.path.join(config["save_path"], f"client_{self.partition_id}", f"round_{round_id}")
-        os.makedirs(outdir, exist_ok=True)
+        # 3) Mode (default train). You can pass 'mode' in strategy's on_fit_config_fn.
+        mode = str(config.get("mode", "train")).lower()
+        if mode not in {"train", "eval"}:
+            warnings.warn(f"Unknown mode '{mode}', defaulting to 'train'")
+            mode = "train"
 
-        # ---- Print model size BEFORE training ----
-        stats = _summarize_model_size(self.model)
-        per_dtype_str = ", ".join(
-            f"{dt}:{_human_bytes(b)}" for dt, b in sorted(stats["per_dtype_bytes"].items())
-        )
-        print(
-            f"[client {self.partition_id}] round {round_id} | "
-            f"model params: {stats['total_params']:,} | "
-            f"on-device: {_human_bytes(stats['total_bytes'])} "
-            f"({per_dtype_str}) | "
-            f"largest tensor: {stats['largest_name']}={_human_bytes(stats['largest_bytes'])} | "
-            f"est. transport(fp16): {_human_bytes(stats['transport_bytes_fp16'])}"
-        )
+        # 4) Optionally pass round-specific knobs to trainer (e.g., LR, steps)
+        # Drop a small JSON in FLAG_DIR if you want; trainer can read it.
+        # Example:
+        # knobs = {"learning_rate": float(config.get("lr", 2e-5)), "max_steps": int(config.get("max_steps", 10))}
+        # with open(os.path.join(os.environ["FLAG_DIR"], "knobs.json"), "w") as f:
+        #     json.dump(knobs, f)
 
-        # Dataset / masking diagnostics
-        sup_tokens = _count_supervised_tokens(
-            self.tokenizer, self.data_collator, self.formatting_prompts_func, self.trainset, self.train_cfg.seq_length
-        )
-        print(
-            f"[client {self.partition_id}] round {round_id} | "
-            f"dataset_size={len(self.trainset)} | supervised_tokens_in_probe_batch={sup_tokens}"
-        )
+        # 5) Signal trainer and wait
+        print(f"[client {self.partition_id}] signaling trainer mode='{mode}'")
+        self.shm.write_mode(mode)
+        self.shm.signal_ready()
+        self.shm.wait_done()
 
-        # Dataloader / effective steps diagnostics (pre-train)
-        tmp_args = self.training_arguments
-        tmp_args.output_dir = outdir
-        tmp_trainer = SFTTrainer(
-            model=self.model,
-            tokenizer=self.tokenizer,
-            args=tmp_args,
-            max_seq_length=self.train_cfg.seq_length,
-            train_dataset=self.trainset,
-            formatting_func=self.formatting_prompts_func,
-            data_collator=self.data_collator,
-        )
-        dl_len = len(tmp_trainer.get_train_dataloader())
-        ga = int(self.training_arguments.gradient_accumulation_steps or 1)
-        epochs = float(self.training_arguments.num_train_epochs or 1.0)
-        eff_steps = math.ceil(dl_len / ga) * max(1, int(epochs))
-        max_steps = int(self.training_arguments.max_steps or 0)
-        if max_steps > 0:
-            eff_steps = min(eff_steps, max_steps)
-        print(
-            f"[client {self.partition_id}] round {round_id} | "
-            f"len(train_dataloader)={dl_len} | GA={ga} | epochs={epochs} | "
-            f"max_steps={max_steps} | expected_steps_this_round≈{eff_steps}"
-        )
+        # 6) Read back updated weights + metrics
+        self.shm.load_model_from_shm(self.model)
+        metrics = self.shm.read_metrics()
+        self._last_metrics = metrics
 
-        # Apply training args updates
-        self.training_arguments.learning_rate = float(new_lr)
-        self.training_arguments.output_dir = outdir
-        self.training_arguments.overwrite_output_dir = True  # fresh run, no resume
+        # 7) Cleanup flags
+        self.shm.clear_flags()
+        self.shm.rm_metrics()
 
-        trainer = SFTTrainer(
-            model=self.model,
-            tokenizer=self.tokenizer,
-            args=self.training_arguments,
-            max_seq_length=self.train_cfg.seq_length,
-            train_dataset=self.trainset,
-            formatting_func=self.formatting_prompts_func,
-            data_collator=self.data_collator,
-        )
+        # 8) Final round? tell trainer to stop
+        cur = int(config.get("current_round", 0))
+        total = int(config.get("total_rounds", 0))
+        if total and cur == total:
+            print(f"[client {self.partition_id}] final round -> sending 'stop'")
+            self.shm.write_mode("stop")
+            self.shm.signal_ready()
+            self.shm.wait_done()
+            self.shm.clear_flags()
+            self.shm.rm_metrics()
 
-        # Train (fresh each round)
-        results = trainer.train(resume_from_checkpoint=False)
+        # 9) Return to server
+        out_params = get_parameters(self.model)
+        mb = sum(a.nbytes for a in out_params) / 1e6
+        print(f"[client {self.partition_id}] fit -> returning {len(out_params)} arrays, {mb:.2f} MB")
+        # prefer 'train_loss' if present
+        train_loss = float(metrics.get("train_loss", 0.0))
+        return out_params, self.num_examples, {"train_loss": train_loss}
 
-        # Loss + steps diagnostics
-        raw_attr = getattr(results, "training_loss", None)
-        raw_metric = results.metrics.get("train_loss", None) if hasattr(results, "metrics") else None
-        gstep = getattr(results, "global_step", None)
-        print(
-            f"[client {self.partition_id}] round {round_id} | "
-            f"global_step={gstep} | "
-            f"loss_attr={raw_attr} (is_none={raw_attr is None}, is_zero={(raw_attr == 0.0) if raw_attr is not None else False}) | "
-            f"metrics.train_loss={raw_metric} (is_none={raw_metric is None}, is_zero={(raw_metric == 0.0) if raw_metric is not None else False})"
-        )
-
-        # Choose loss to report upstream
-        train_loss = (
-            float(raw_attr)
-            if raw_attr is not None
-            else float(raw_metric if raw_metric is not None else 0.0)
-        )
-
-        # NaN/Inf guard on outgoing weights (protect aggregator)
-        new_params = get_parameters(self.model)
-        if _has_nan_or_inf(new_params):
-            print(f"[client {self.partition_id}] round {round_id} | DETECTED NaN/Inf in weights — reverting update")
-            new_params = parameters  # send back received (clean) weights
-            return new_params, len(self.trainset), {"train_loss": float("nan"), "nan_guard": 1}
-
-        return new_params, len(self.trainset), {"train_loss": train_loss, "nan_guard": 0}
+    def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
+        set_parameters(self.model, parameters)
+        self.shm.write_model_to_shm(self.model)
+        print(f"[client {self.partition_id}] signaling trainer mode='eval'")
+        self.shm.write_mode("eval")
+        self.shm.signal_ready()
+        self.shm.wait_done()
+        self.shm.load_model_from_shm(self.model)
+        metrics = self.shm.read_metrics()
+        self.shm.clear_flags()
+        self.shm.rm_metrics()
+        loss = float(metrics.get("eval_loss", 0.0))
+        return loss, self.num_examples, metrics
 
 
+# ---------------------------
+# ClientApp factory (new API)
+# ---------------------------
 def client_fn(context: Context) -> FlowerClient:
-    """Create a Flower client representing a single organization."""
-    partition_id = context.node_config["partition-id"]
-    num_partitions = context.node_config["num-partitions"]
-    num_rounds = context.run_config["num-server-rounds"]
+    """Create a Flower client using run/node config from Context."""
+    partition_id = int(context.node_config["partition-id"])
+    num_partitions = int(context.node_config["num-partitions"])
+    num_rounds = int(context.run_config["num-server-rounds"])
+
+    # Hydra-like: flatten -> omegaconf DictConfig
     cfg = DictConfig(replace_keys(unflatten_dict(context.run_config)))
 
-    # Client partition
-    client_trainset = load_data(partition_id, num_partitions, cfg.dataset.name)
-    tokenizer, data_collator, formatting_prompts_func = (
-        get_tokenizer_and_data_collator_and_propt_formatting(cfg.model.name)
-    )
-
+    # Build controller client
     return FlowerClient(
-        cfg.model,
-        cfg.train,
-        client_trainset,
-        tokenizer,
-        formatting_prompts_func,
-        data_collator,
-        num_rounds,
-        partition_id,
+        model_cfg=cfg.model,                 # must match fsdp_trainer model arch
+        dataset_name=cfg.dataset.name,       # for local sample count only
+        num_rounds=num_rounds,
+        partition_id=partition_id,
+        num_partitions=num_partitions,
+        save_path=os.getcwd(),
     ).to_client()
 
 
-# Flower ClientApp
+# Register ClientApp
 app = ClientApp(client_fn)
