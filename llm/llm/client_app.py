@@ -1,9 +1,5 @@
 """flowertune-llm: A Flower / FlowerTune client (dense FT, no LoRA/quant).
-Adds stability fixes:
-- Switch to AMP-FP16 (GradScaler) to avoid FP16 NaNs
-- Disable logging_nan_inf_filter to reveal real NaNs during debug
-- NaN guard before sending weights
-- Detailed diagnostics
+BF16-first precision policy with diagnostics and NaN guard.
 """
 
 import os
@@ -135,40 +131,42 @@ class FlowerClient(NumPyClient):
         self.trainset = trainset
         self.partition_id = partition_id
 
-        # --- Stability defaults
-        # reveal NaNs in logs (HF otherwise prints 0.0)
-        self.training_arguments.logging_nan_inf_filter = False
-        # ensure there is some grad clipping (HF default is 1.0, keep/override here if needed)
+        # Reveal NaNs during debugging (set True later for clean logs if you want)
+        if getattr(self.training_arguments, "logging_nan_inf_filter", None) is None:
+            self.training_arguments.logging_nan_inf_filter = False
         if getattr(self.training_arguments, "max_grad_norm", None) is None:
             self.training_arguments.max_grad_norm = 1.0
 
         # Instantiate dense model
         self.model = get_model(model_cfg)
 
-        # Prefer AMP-FP16 over pure FP16 to avoid NaNs:
-        self._prefer_amp_fp16()
+        # Prefer BF16 if supported; else fall back to AMP-FP16
+        self._prefer_bf16_else_amp_fp16()
 
-    def _prefer_amp_fp16(self) -> None:
+    def _prefer_bf16_else_amp_fp16(self) -> None:
         """
-        If the model was loaded in FP16, switch to AMP-FP16:
-          - cast model to FP32 master params
-          - enable fp16=True in Trainer (GradScaler on)
-        BF16 stays BF16 (no scaler). FP32 stays FP32 (can still set fp16=True if desired).
+        BF16-first precision policy:
+          - If GPU supports BF16, cast model to BF16 and set Trainer.bf16=True (no GradScaler).
+          - Else, fall back to AMP-FP16: cast model to FP32 and set Trainer.fp16=True (with GradScaler).
         """
-        param_dtype = next(self.model.parameters()).dtype
-        if param_dtype == torch.float16:
-            print(f"[client {self.partition_id}] Switching to AMP-FP16 (cast model->fp32, Trainer.fp16=True)")
-            # Cast model to fp32 master weights to work with GradScaler
-            self.model = self.model.to(torch.float32)
-            self.training_arguments.fp16 = True
-            self.training_arguments.bf16 = False
-        elif param_dtype == torch.bfloat16:
+        bf16_ok = False
+        try:
+            bf16_ok = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+        except AttributeError:
+            # Fallback heuristic: Ampere/Hopper+ typically support BF16
+            cap = torch.cuda.get_device_capability(0) if torch.cuda.is_available() else (0, 0)
+            bf16_ok = cap[0] >= 8  # SM80+
+
+        if bf16_ok:
+            print(f"[client {self.partition_id}] Using BF16: casting model to torch.bfloat16 and enabling Trainer.bf16")
+            self.model = self.model.to(torch.bfloat16)
             self.training_arguments.bf16 = True
             self.training_arguments.fp16 = False
         else:
-            # model already fp32; if user didn't force bf16, enable fp16 for speed
-            if not getattr(self.training_arguments, "bf16", False) and getattr(self.training_arguments, "fp16", None) is None:
-                self.training_arguments.fp16 = True
+            print(f"[client {self.partition_id}] BF16 not supported; falling back to AMP-FP16 (cast model->fp32, Trainer.fp16=True)")
+            self.model = self.model.to(torch.float32)
+            self.training_arguments.fp16 = True
+            self.training_arguments.bf16 = False
 
     def fit(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[NDArrays, int, Dict]:
         """One FL local training round."""
@@ -236,7 +234,7 @@ class FlowerClient(NumPyClient):
             f"max_steps={max_steps} | expected_steps_this_round≈{eff_steps}"
         )
 
-        # ---- Apply training args updates
+        # Apply training args updates
         self.training_arguments.learning_rate = float(new_lr)
         self.training_arguments.output_dir = outdir
         self.training_arguments.overwrite_output_dir = True  # fresh run, no resume
@@ -272,12 +270,11 @@ class FlowerClient(NumPyClient):
             else float(raw_metric if raw_metric is not None else 0.0)
         )
 
-        # ---- NaN guard on outgoing weights (prevents poisoning the aggregate)
+        # NaN/Inf guard on outgoing weights (protect aggregator)
         new_params = get_parameters(self.model)
         if _has_nan_or_inf(new_params):
             print(f"[client {self.partition_id}] round {round_id} | DETECTED NaN/Inf in weights — reverting update")
             new_params = parameters  # send back received (clean) weights
-            # Optional: surface the issue in metrics
             return new_params, len(self.trainset), {"train_loss": float("nan"), "nan_guard": 1}
 
         return new_params, len(self.trainset), {"train_loss": train_loss, "nan_guard": 0}
