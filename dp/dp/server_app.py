@@ -9,8 +9,8 @@ from flwr.server import ServerApp, ServerAppComponents, ServerConfig
 from flwr.server.strategy import FedAvg
 from omegaconf import DictConfig
 
-from fsdp.models import get_model, get_parameters, set_parameters
-from fsdp.dataset import replace_keys
+from dp.models import get_model, get_parameters, set_parameters
+from dp.dataset import replace_keys
 
 
 # Get function that will be executed by the strategy's evaluate() method

@@ -27,8 +27,8 @@ from flwr.common.typing import NDArrays, Scalar
 from omegaconf import DictConfig
 
 # Your modules
-from fsdp import models as mdl
-from fsdp import dataset as ds
+from dp import models as mdl
+from dp import dataset as ds
 
 from multiprocessing import shared_memory
 

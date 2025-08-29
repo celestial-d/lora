@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "FSDP_FL"
+name = "DeepSpeed_FL"
 version = "1.0.0"
-description = "Federated LLM Fine-tuning with Flower and FSDP"
+description = "Federated LLM Fine-tuning with Flower and DeepSpeed zero3 Offload"
 license = "Apache-2.0"
 dependencies = [
     "flwr[simulation]>=1.20.0",
@@ -29,8 +29,8 @@ packages = ["."]
 publisher = "flwrlabs"
 
 [tool.flwr.app.components]
-serverapp = "fsdp.server_app:app"
-clientapp = "fsdp.client_app:app"
+serverapp = "dp.server_app:app"
+clientapp = "dp.client_app:app"
 
 [tool.flwr.app.config]
 dataset.name = "sahil2801/CodeAlpaca-20k"
