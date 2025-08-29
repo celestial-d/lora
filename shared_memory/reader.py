@@ -17,7 +17,8 @@ from transformers import TrainingArguments, DataCollatorForLanguageModeling
 # -----------------------
 # Config (env overrides)
 # -----------------------
-MODEL_NAME  = os.getenv("MODEL_NAME", "facebook/opt-1.3b")
+#meta-llama/Llama-2-7b-hf
+MODEL_NAME  = os.getenv("MODEL_NAME", "meta-llama/Llama-2-7b-hf")
 SYNC_DIR    = os.getenv("SYNC_DIR", "./sync")
 CKPT_DIR    = os.getenv("CKPT_DIR", "/dev/shm/ckpt_shared")  # shared RAM-backed dir
 TMP_DIR     = CKPT_DIR + ".tmp"
@@ -142,24 +143,24 @@ def main():
         # Load writer's new checkpoint and do "evolution" (here: quick eval)
         load_sharded_into_existing_model(model, CKPT_DIR, dtype=torch.float16)
         #output_dir=os.path.join(SYNC_DIR, f"eval_tmp_r{r}"),
-        args = TrainingArguments(
-            per_device_eval_batch_size=4,
-            dataloader_num_workers=0,
-            report_to=[],
-        )
-        collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
-        trainer = SFTTrainer(
-            model=model,
-            tokenizer=tokenizer,
-            train_dataset=None,
-            eval_dataset=eval_ds,
-            args=args,
-            data_collator=collator,
-            dataset_text_field="text",
-            max_seq_length=MAX_SEQ_LEN,
-        )
-        metrics = trainer.evaluate()
-        print(f"[reader] Round {r} eval: {metrics}")
+        # args = TrainingArguments(
+        #     per_device_eval_batch_size=4,
+        #     dataloader_num_workers=0,
+        #     report_to=[],
+        # )
+        # collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+        # trainer = SFTTrainer(
+        #     model=model,
+        #     tokenizer=tokenizer,
+        #     train_dataset=None,
+        #     eval_dataset=eval_ds,
+        #     args=args,
+        #     data_collator=collator,
+        #     dataset_text_field="text",
+        #     max_seq_length=MAX_SEQ_LEN,
+        # )
+        # metrics = trainer.evaluate()
+        # print(f"[reader] Round {r} eval: {metrics}")
 
         # Optionally: evolve model (here we just re-save; plug your evolution step here)
         atomic_save_pretrained_fp16(model, CKPT_DIR, MAX_SHARD_SIZE)

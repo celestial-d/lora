@@ -28,7 +28,7 @@ from trl import SFTTrainer
 # -----------------------
 # Config
 # -----------------------
-MODEL_NAME  = os.getenv("MODEL_NAME", "facebook/opt-125m")
+MODEL_NAME  = os.getenv("MODEL_NAME", "facebook/opt-1.3b")
 SHM_NAME    = os.getenv("SHM_NAME", "opt125m_shm")
 SYNC_DIR    = os.getenv("SYNC_DIR", "./sync")
 

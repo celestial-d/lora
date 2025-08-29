@@ -56,7 +56,7 @@ if torch.cuda.is_available():
 # -----------------------
 # Config (env overrides)
 # -----------------------
-MODEL_NAME  = os.getenv("MODEL_NAME", "meta-llama/Llama-2-7b-hf")
+MODEL_NAME  = os.getenv("MODEL_NAME", "facebook/opt-1.3b")
 SYNC_DIR    = os.getenv("SYNC_DIR", "./sync")
 CKPT_DIR    = os.getenv("CKPT_DIR", "/dev/shm/ckpt_shared")  # shared RAM-backed dir
 MAX_SHARD_SIZE = os.getenv("MAX_SHARD_SIZE", "1GB")
