@@ -1,24 +1,20 @@
-"""
-fsdp/client_app.py
-Flower ClientApp (controller) that orchestrates an external FSDP trainer
-via shared memory (fp16) + flag files.
-
-- Uses your fsdp.models / fsdp.dataset modules (as provided).
-- Respects pyproject config: bf16 preference, dtype, etc.
-- Writes trainer_config.json + keys_order.json into FLAG_DIR so the trainer
-  can exactly match model/dataset/knobs without extra envs.
-"""
+# hf_fulltrain_client_app.py
+# Flower ClientApp that orchestrates DeepSpeed+TRL full fine-tuning by
+# saving a HF checkpoint into /dev/shm and running: torchrun ds_trl.py
 
 from __future__ import annotations
 
 import os
+import sys
 import json
-import time
-import warnings
+import shutil
+import subprocess
+from pathlib import Path
 from typing import Dict, Tuple
 
 import numpy as np
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from flwr.client import ClientApp, NumPyClient
 from flwr.common import Context
@@ -26,262 +22,130 @@ from flwr.common.config import unflatten_dict
 from flwr.common.typing import NDArrays, Scalar
 from omegaconf import DictConfig
 
-# Your modules
+# your modules
 from dp import models as mdl
 from dp import dataset as ds
 
-from multiprocessing import shared_memory
+
+# =============== config / defaults ===============
+DEFAULT_MODEL_NAME = os.environ.get("MODEL_NAME", "facebook/opt-125m")
+DEFAULT_NPROC      = int(os.environ.get("NPROC", "2"))
+DEFAULT_MASTER_PORT= os.environ.get("MASTER_PORT", "29517")
+DEFAULT_METRICS_PATH = Path("./opt67b_codealpaca_zero3/eval_metrics.json")  # ds_trl.py writes here
 
 
-# ---------------------------
-# Shared-memory bridge (fp16)
-# ---------------------------
-class ShmBridge:
-    def __init__(self, shm_name: str, flag_dir: str, model: torch.nn.Module, dtype=np.float16):
-        self.shm_name = shm_name
-        self.flag_dir = flag_dir
-        self.dtype = dtype
-        os.makedirs(flag_dir, exist_ok=True)
+# =============== HF checkpoint helpers ===============
+def hf_checkpoint_exists(d: Path) -> bool:
+    return d.exists() and (d / "config.json").exists()
 
-        sd = model.state_dict()
-        self._keys = list(sd.keys())
-        self._numels = [sd[k].numel() for k in self._keys]
-        self._total = int(sum(self._numels))
-        self._nbytes = np.dtype(self.dtype).itemsize * self._total
+def save_hf_ckpt_from_model(model: torch.nn.Module, tok_name: str, dst: Path):
+    dst.mkdir(parents=True, exist_ok=True)
+    try:
+        model.save_pretrained(dst)
+    except Exception:
+        base = AutoModelForCausalLM.from_pretrained(tok_name, low_cpu_mem_usage=True)
+        base.load_state_dict(model.state_dict(), strict=False)
+        base.save_pretrained(dst)
+    tok = AutoTokenizer.from_pretrained(tok_name, use_fast=True)
+    tok.save_pretrained(dst)
 
-        # Persist the key order so trainer can flatten/unflatten consistently
-        self.keys_json = os.path.join(self.flag_dir, "keys_order.json")
-        with open(self.keys_json, "w") as f:
-            json.dump(self._keys, f)
+def load_hf_ckpt_into_model(src: Path, model: torch.nn.Module):
+    hf_model = AutoModelForCausalLM.from_pretrained(src, low_cpu_mem_usage=True)
+    model.load_state_dict(hf_model.state_dict(), strict=False)
 
-        try:
-            self.shm = shared_memory.SharedMemory(name=self.shm_name, create=True, size=self._nbytes)
-            print(f"[client] Created SHM '{self.shm_name}' with {self._nbytes/1e6:.2f} MB")
-        except FileExistsError:
-            self.shm = shared_memory.SharedMemory(name=self.shm_name, create=False)
-            if self.shm.size < self._nbytes:
-                raise RuntimeError(
-                    f"Existing SHM '{self.shm_name}' too small: {self.shm.size} < {self._nbytes}"
-                )
-            print(f"[client] Connected to existing SHM '{self.shm_name}' ({self.shm.size/1e6:.2f} MB)")
-
-        self.flag_ready   = os.path.join(self.flag_dir, "ready.flag")
-        self.flag_done    = os.path.join(self.flag_dir, "done.flag")
-        self.flag_mode    = os.path.join(self.flag_dir, "mode.flag")
-        self.metrics_json = os.path.join(self.flag_dir, "metrics.json")
-        self.cfg_json     = os.path.join(self.flag_dir, "trainer_config.json")
-        self.knobs_json   = os.path.join(self.flag_dir, "knobs.json")
-
-    def _flat_view(self):
-        return np.ndarray((self._total,), dtype=self.dtype, buffer=self.shm.buf)
-
-    def write_mode(self, mode: str):
-        with open(self.flag_mode, "w") as f:
-            f.write(mode); f.flush(); os.fsync(f.fileno())
-
-    def signal_ready(self):
-        with open(self.flag_ready, "w") as f:
-            f.write("ready"); f.flush(); os.fsync(f.fileno())
-
-    def wait_done(self, poll: float = 0.1, timeout: float | None = None):
-        start = time.time()
-        while not os.path.exists(self.flag_done):
-            time.sleep(poll)
-            if timeout is not None and (time.time() - start) > timeout:
-                raise TimeoutError("Timed out waiting for done.flag")
-
-    def clear_flags(self):
-        for p in (self.flag_done, self.flag_ready, self.flag_mode):
-            try: os.remove(p)
-            except FileNotFoundError: pass
-
-    def write_model_to_shm(self, model: torch.nn.Module):
-        sd = model.state_dict()
-        flat = self._flat_view()
-        ptr = 0
-        for k, n in zip(self._keys, self._numels):
-            v = (
-                sd[k].detach().to("cpu").to(torch.float16)
-                .contiguous().view(-1).numpy()
-            )
-            flat[ptr:ptr+n] = v
-            ptr += n
-
-    def load_model_from_shm(self, model: torch.nn.Module):
-        sd = model.state_dict()
-        flat = self._flat_view()
-        ptr = 0
-        new_sd = {}
-        for k, n in zip(self._keys, self._numels):
-            p = sd[k]
-            chunk = torch.from_numpy(flat[ptr:ptr+n].copy()).view(p.shape).to(p.dtype).contiguous()
-            new_sd[k] = chunk
-            ptr += n
-        model.load_state_dict(new_sd, strict=True)
-
-    def read_metrics(self) -> dict:
-        try:
-            with open(self.metrics_json, "r") as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return {}
-        except Exception as e:
-            print(f"[client] Warning: failed to read metrics.json: {e}")
-            return {}
-
-    def rm_metrics(self):
-        try: os.remove(self.metrics_json)
-        except FileNotFoundError: pass
-
-    def write_trainer_config(self, cfg: DictConfig, partition_id: int, num_partitions: int):
-        # Respect your pyproject config (bf16 preference, dtype, etc.)
-        targs = cfg.train.training_arguments
-        trainer_cfg = {
-            "model_name": cfg.model.name,
-            "model_dtype": getattr(cfg.model, "dtype", "bf16"),
-            "dataset_name": cfg.dataset.name,
-            "partition_id": int(partition_id),
-            "num_partitions": int(num_partitions),
-            "seq_length": int(cfg.train.seq_length),
-            "per_device_train_bs": int(targs.per_device_train_batch_size),
-            "ga_steps": int(targs.gradient_accumulation_steps),
-            "learning_rate": float(targs.learning_rate or 2e-5),
-            "max_steps": int(targs.max_steps or 10),
-            "logging_steps": int(targs.logging_steps or 10),
-            "lr_scheduler_type": str(targs.lr_scheduler_type or "constant"),
-            "gradient_checkpointing": bool(cfg.model.gradient_checkpointing),
-            "targs_bf16": bool(getattr(targs, "bf16", False)),
-            "targs_fp16": bool(getattr(targs, "fp16", False)),
-            "fsdp": "full_shard auto_wrap",
-            "fsdp_transformer_layer_cls_to_wrap": "OPTDecoderLayer",
-            "attn_implementation": getattr(cfg.model, "attn_implementation", "sdpa"),
-            "output_dir": os.path.abspath("./fsdp_output"),
-        }
-        with open(self.cfg_json, "w") as f:
-            json.dump(trainer_cfg, f)
-        os.sync()
-
-        # Optional heads-up if quantization is present in config (ignored)
-        if hasattr(cfg.model, "quantization"):
-            print("[client] NOTE: cfg.model.quantization is set but ignored (dense full FT).")
-
-    def write_knobs(self, *, learning_rate: float, max_steps: int | None):
-        data = {"learning_rate": float(learning_rate)}
-        if max_steps is not None:
-            data["max_steps"] = int(max_steps)
-        with open(self.knobs_json, "w") as f:
-            json.dump(data, f)
-        os.sync()
+def count_layers_from_dir(d: Path) -> int | str:
+    mdl_tmp = AutoModelForCausalLM.from_pretrained(d, low_cpu_mem_usage=True)
+    if hasattr(mdl_tmp, "model") and hasattr(mdl_tmp.model, "layers"):
+        return len(mdl_tmp.model.layers)
+    if hasattr(mdl_tmp, "transformer") and hasattr(mdl_tmp.transformer, "h"):
+        return len(mdl_tmp.transformer.h)
+    if hasattr(mdl_tmp.config, "num_hidden_layers"):
+        return mdl_tmp.config.num_hidden_layers
+    return "UNKNOWN"
 
 
-# ---------------------------
-# Flower NumPyClient (writer)
-# ---------------------------
-class FlowerClient(NumPyClient):
+# =============== the Flower NumPyClient ===============
+class FullHFClient(NumPyClient):
     def __init__(self, cfg: DictConfig, num_rounds: int, partition_id: int, num_partitions: int):
         self.cfg = cfg
         self.partition_id = partition_id
         self.num_rounds = num_rounds
         self.num_partitions = num_partitions
 
-        # Plain model for state_dict (FSDP model lives in external trainer)
-        self.model = mdl.get_model(cfg.model)
+        # model used only for param (de)serialization with server
+        self.model_name = cfg.model.name if hasattr(cfg, "model") else DEFAULT_MODEL_NAME
+        self.model = mdl.get_model(cfg.model if hasattr(cfg, "model") else {"name": self.model_name})
         if torch.cuda.is_available():
             self.model = self.model.to("cuda")
 
-        # SHM + flags (per client)
-        shm_name = f"opt_client_{partition_id}"
-        flag_dir = os.path.abspath(f"./flags_client_{partition_id}")
-        self.shm = ShmBridge(shm_name, flag_dir, self.model, dtype=np.float16)
+        # unique SHM dir per client to avoid collisions
+        base_shm = os.environ.get("SHM_BASE", "/dev/shm")
+        self.shm_dir = Path(base_shm) / f"llama7b_client_{partition_id}"
+        self.nproc = int(os.environ.get("NPROC", str(DEFAULT_NPROC)))
+        self.master_port = os.environ.get("MASTER_PORT", DEFAULT_MASTER_PORT)
 
-        # (optional) expose to trainer via envs (trainer mainly uses trainer_config.json)
-        os.environ["SHM_NAME"] = shm_name
-        os.environ["FLAG_DIR"] = flag_dir
-        print(f"[client] SHM_NAME={shm_name} FLAG_DIR={flag_dir}")
+        # optional: dataset size for weighted FedAvg on server
+        try:
+            self.num_examples = len(ds.load_data(partition_id, num_partitions, cfg.dataset.name))
+        except Exception:
+            self.num_examples = 0
 
-        # Write trainer_config.json once
-        self.shm.write_trainer_config(cfg, partition_id, num_partitions)
-
-        # Count examples for reporting to server
-        self.num_examples = len(ds.load_data(partition_id, num_partitions, cfg.dataset.name))
-
+    # ---- Flower interface ----
     def get_parameters(self, config: Dict[str, Scalar]) -> NDArrays:
-        arrs = mdl.get_parameters(self.model)
-        mb = sum(a.nbytes for a in arrs) / 1e6
-        print(f"[client {self.partition_id}] get_parameters -> {len(arrs)} arrays, {mb:.2f} MB")
-        return arrs
+        return mdl.get_parameters(self.model)
 
     def fit(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[NDArrays, int, Dict]:
-        # Load global -> SHM
+        # 1) load global params into local model
         mdl.set_parameters(self.model, parameters)
-        self.shm.write_model_to_shm(self.model)
 
-        # Per-round cosine LR knobs for trainer
-        round_id = int(config.get("current_round", 1))
-        new_lr = mdl.cosine_annealing(
-            round_id,
-            self.num_rounds,
-            self.cfg.train.learning_rate_max,
-            self.cfg.train.learning_rate_min,
-        )
-        max_steps = int(self.cfg.train.training_arguments.max_steps or 10)
-        self.shm.write_knobs(learning_rate=float(new_lr), max_steps=max_steps)
+        # 2) write HF checkpoint to SHM_DIR (fresh)
+        if self.shm_dir.exists():
+            shutil.rmtree(self.shm_dir)
+        save_hf_ckpt_from_model(self.model.cpu(), self.model_name, self.shm_dir)
 
-        # Signal trainer
-        mode = str(config.get("mode", "train")).lower()
-        print(f"[client {self.partition_id}] signaling trainer mode='{mode}', lr={new_lr:.6g}, max_steps={max_steps}")
-        self.shm.write_mode(mode)
-        self.shm.signal_ready()
+        # 3) run a single training/eval round via torchrun ds_trl.py
+        env = os.environ.copy()
+        env.setdefault("TRITON_CACHE_DIR", "/dev/shm/triton_cache")
+        env.setdefault("MASTER_PORT", self.master_port)
+        env["SHM_DIR"] = str(self.shm_dir)
 
-        # Wait, read back
-        self.shm.wait_done()
-        self.shm.load_model_from_shm(self.model)
-        metrics = self.shm.read_metrics()
-        self.shm.clear_flags()
-        self.shm.rm_metrics()
+        cmd = [sys.executable, "-m", "torch.distributed.run", f"--nproc_per_node={self.nproc}", "lora/dp/dp/ds_trl.py"]
+        print(f"[client {self.partition_id}] launching: {' '.join(cmd)}  (SHM_DIR={self.shm_dir})")
+        ret = subprocess.call(cmd, env=env)
+        if ret != 0:
+            raise RuntimeError(f"ds_trl.py failed with exit {ret}")
 
-        # Final round? tell trainer to stop
-        total = int(config.get("total_rounds", self.num_rounds))
-        if total and round_id == total:
-            print(f"[client {self.partition_id}] final round -> sending 'stop'")
-            self.shm.write_mode("stop")
-            self.shm.signal_ready()
-            self.shm.wait_done()
-            self.shm.clear_flags()
-            self.shm.rm_metrics()
+        # 4) read metrics if present (optional)
+        metrics = {}
+        if DEFAULT_METRICS_PATH.exists():
+            try:
+                metrics = json.loads(DEFAULT_METRICS_PATH.read_text())
+            except Exception:
+                metrics = {}
+        # add a small debug metric
+        metrics["num_layers"] = count_layers_from_dir(self.shm_dir)
 
-        # Return to server
+        # 5) load updated checkpoint back into local model
+        load_hf_ckpt_into_model(self.shm_dir, self.model)
+
+        # 6) return updated params + examples + metrics
         out_params = mdl.get_parameters(self.model)
-        mb = sum(a.nbytes for a in out_params) / 1e6
-        print(f"[client {self.partition_id}] fit -> returning {len(out_params)} arrays, {mb:.2f} MB")
-        train_loss = float(metrics.get("train_loss", 0.0))
-        return out_params, self.num_examples, {"train_loss": train_loss}
+        return out_params, (self.num_examples or 0), metrics
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
+        # simple local no-op eval (you can wire an eval-only run in ds_trl.py if desired)
         mdl.set_parameters(self.model, parameters)
-        self.shm.write_model_to_shm(self.model)
-        print(f"[client {self.partition_id}] signaling trainer mode='eval'")
-        self.shm.write_mode("eval")
-        self.shm.signal_ready()
-        self.shm.wait_done()
-        self.shm.load_model_from_shm(self.model)
-        metrics = self.shm.read_metrics()
-        self.shm.clear_flags()
-        self.shm.rm_metrics()
-        loss = float(metrics.get("eval_loss", 0.0))
-        return loss, self.num_examples, metrics
+        return 0.0, (self.num_examples or 0), {}
 
 
-# ---------------------------
-# ClientApp factory (new API)
-# ---------------------------
-def client_fn(context: Context) -> FlowerClient:
+# =============== ClientApp factory (new API) ===============
+def client_fn(context: Context):
     partition_id = int(context.node_config["partition-id"])
     num_partitions = int(context.node_config["num-partitions"])
     num_rounds = int(context.run_config["num-server-rounds"])
     cfg = DictConfig(ds.replace_keys(unflatten_dict(context.run_config)))
-    return FlowerClient(cfg, num_rounds, partition_id, num_partitions).to_client()
+    return FullHFClient(cfg, num_rounds, partition_id, num_partitions).to_client()
 
 
-# Register ClientApp
+# register ClientApp
 app = ClientApp(client_fn)
