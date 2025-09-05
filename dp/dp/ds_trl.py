@@ -119,16 +119,17 @@ def main():
         dataset_text_field="text",
     )
 
-    trainer.train()
-    metrics = trainer.evaluate()
-    if "eval_loss" in metrics and metrics["eval_loss"] is not None:
-        try:
-            metrics["perplexity"] = math.exp(metrics["eval_loss"])
-        except OverflowError:
-            metrics["perplexity"] = float("inf")
-    with open(Path(output_dir) / "eval_metrics.json", "w") as f:
-        json.dump(metrics, f, indent=2)
-    print("Final eval (train-as-eval):", metrics)
+    results = trainer.train()
+    #print("Training completed. Results:", results.training_loss)
+    # metrics = trainer.evaluate()
+    # if "eval_loss" in metrics and metrics["eval_loss"] is not None:
+    #     try:
+    #         metrics["perplexity"] = math.exp(metrics["eval_loss"])
+    #     except OverflowError:
+    #         metrics["perplexity"] = float("inf")
+    # with open(Path(output_dir) / "eval_metrics.json", "w") as f:
+    #     json.dump(metrics, f, indent=2)
+    # print("Final eval (train-as-eval):", metrics)
 
     # ===== Save back to SHM via HF API (rank-0 only) =====
     
@@ -144,7 +145,13 @@ def main():
             shutil.rmtree(SHM_DIR)
         shutil.move(str(tmp_dir), SHM_DIR)
         print(f"[rank0] Saved updated checkpoint to {SHM_DIR}")
-
+        loss_file = Path("/dev/shm/loss.txt")
+        if not loss_file.exists():
+            with open(loss_file, "w") as f:
+                f.write("0.0\n")   # initialize with a default loss value
+        with open(loss_file, "w") as f:
+            f.write(f"{results.training_loss}\n")
+        print(f"[rank0] Wrote train_loss={results.training_loss} to {loss_file}")
     barrier()  # let rank-0 finish saving first
 
 if __name__ == "__main__":

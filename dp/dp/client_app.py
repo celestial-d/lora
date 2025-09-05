@@ -116,7 +116,7 @@ class FullHFClient(NumPyClient):
             raise RuntimeError(f"ds_trl.py failed with exit {ret}")
 
         # 4) read metrics if present (optional)
-        metrics = {}
+        metrics: Dict[str, Scalar] = {}
         if DEFAULT_METRICS_PATH.exists():
             try:
                 metrics = json.loads(DEFAULT_METRICS_PATH.read_text())
@@ -130,7 +130,17 @@ class FullHFClient(NumPyClient):
 
         # 6) return updated params + examples + metrics
         out_params = mdl.get_parameters(self.model)
-        return out_params, (self.num_examples or 0), metrics
+
+        # 7) load training loss if written by ds_trl.py
+        loss_file = Path("/dev/shm/loss.txt")
+        if loss_file.exists():
+            try:
+                with open(loss_file, "r") as f:
+                    line = f.readline()
+                    metrics["train_loss"] = float(line.strip())
+            except Exception:
+                pass
+        return out_params, (self.num_examples or 0), {"train_loss": metrics["train_loss"]}
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
         # simple local no-op eval (you can wire an eval-only run in ds_trl.py if desired)

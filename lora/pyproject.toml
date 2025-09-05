@@ -67,7 +67,7 @@ options.backend.client-resources.num-cpus = 8
 options.backend.client-resources.num-gpus = 1.0
 
 [tool.flwr.federations.local-deployment]
-address = "10.1.0.6:9093"
+address = "10.1.0.4:9093"
 insecure = true
 
 
