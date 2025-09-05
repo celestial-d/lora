@@ -34,7 +34,7 @@ clientapp = "dp.client_app:app"
 
 [tool.flwr.app.config]
 dataset.name = "sahil2801/CodeAlpaca-20k"
-model.name = "facebook/opt-125m"
+model.name = "facebook/opt-2.7b"
 model.gradient-checkpointing = true
 model.dtype = "bf16"  
 train.training-arguments.bf16 = true     

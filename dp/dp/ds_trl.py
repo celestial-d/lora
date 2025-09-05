@@ -75,9 +75,10 @@ def resolve_ctx():
 def main():
     # -------- training config (static defaults; override via run_config if you want) --------
     max_seq_length = 512
-    per_device_train_batch_size = 1
+    #64 for opt-125m, 16 for opt2.7b, 1 for llama-7b
+    per_device_train_batch_size = 16
     gradient_accumulation_steps = 16
-    num_train_epochs = 3
+    num_train_epochs = 1
     learning_rate = 2e-5
     weight_decay = 0.0
     warmup_ratio = 0.03

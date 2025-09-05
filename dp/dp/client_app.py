@@ -128,6 +128,7 @@ class FullHFClient(NumPyClient):
             "lora/dp/dp/ds_trl.py",
             *ds_args,  # <-- args go to ds_trl.py
         ]
+        
         print(f"[client {self.partition_id}] launching: {' '.join(cmd)} (SHM_DIR={self.shm_dir})")
         ret = subprocess.call(cmd, env=env)
 
