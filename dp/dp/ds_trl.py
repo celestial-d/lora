@@ -1,41 +1,79 @@
-# --- add near imports ---
-import os, json, math, time, shutil
+# ds_trl.py
+import os, json, math, time, shutil, argparse
 from pathlib import Path
 import torch
-from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
 from trl import SFTTrainer
 
-# rank/device (keep your originals)
+# your modules
+from dp.dataset import (
+    get_tokenizer_and_data_collator_and_propt_formatting,
+    load_data,
+)
+
+# ---------- distributed basics ----------
 local_rank = int(os.environ.get("LOCAL_RANK", 0))
 torch.cuda.set_device(local_rank)
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 torch.backends.cuda.matmul.allow_tf32 = True
 
-# NEW: shared dir for HF-style checkpoint in /dev/shm
 SHM_DIR = os.environ.get("SHM_DIR", "/dev/shm/llama7b_cycle")
 
-def is_rank0():
+def is_rank0() -> bool:
     return int(os.environ.get("RANK", "0")) == 0
 
 def barrier():
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         torch.distributed.barrier()
 
-def format_row(ex):
-    instr = (ex.get("instruction") or "").strip()
-    inp   = (ex.get("input") or "").strip()
-    out   = (ex.get("output") or "").strip()
-    if inp:
-        return f"### Question:\n{instr}\n\n### Input:\n{inp}\n\n### Answer:\n{out}"
-    return f"### Question:\n{instr}\n\n### Answer:\n{out}"
+# ---------- arg/env/json resolution ----------
+def parse_cli():
+    p = argparse.ArgumentParser()
+    p.add_argument("--partition-id", type=int, default=None)
+    p.add_argument("--num-partitions", type=int, default=None)
+    p.add_argument("--num-rounds", type=int, default=None)
+    p.add_argument("--model-name", type=str, default=None)
+    p.add_argument("--dataset-name", type=str, default=None)
+    return p.parse_args()
+
+def read_json_handoff(shm_path: Path):
+    f = shm_path / "context.json"
+    if f.exists():
+        try:
+            return json.loads(f.read_text())
+        except Exception:
+            pass
+    return {}
+
+def resolve_ctx():
+    # defaults
+    ctx = {
+        "partition_id": 0,
+        "num_partitions": 1,
+        "num_rounds": 1,
+        "model_name": os.getenv("MODEL_NAME", "facebook/opt-125m"),
+        "dataset_name": os.getenv("DATASET_NAME", "unknown"),
+    }
+    # JSON in SHM (optional)
+    hand = read_json_handoff(Path(SHM_DIR))
+    for k in ("partition_id", "num_partitions", "num_rounds", "model_name", "dataset_name"):
+        if k in hand and hand[k] is not None:
+            ctx[k] = hand[k]
+    # env fallbacks
+    ctx["partition_id"]   = int(os.getenv("FL_PARTITION_ID",   ctx["partition_id"]))
+    ctx["num_partitions"] = int(os.getenv("FL_NUM_PARTITIONS", ctx["num_partitions"]))
+    ctx["num_rounds"]     = int(os.getenv("FL_NUM_ROUNDS",     ctx["num_rounds"]))
+    # CLI has highest precedence
+    args = parse_cli()
+    if args.partition_id  is not None: ctx["partition_id"] = int(args.partition_id)
+    if args.num_partitions is not None: ctx["num_partitions"] = int(args.num_partitions)
+    if args.num_rounds    is not None: ctx["num_rounds"] = int(args.num_rounds)
+    if args.model_name    is not None: ctx["model_name"] = args.model_name
+    if args.dataset_name  is not None: ctx["dataset_name"] = args.dataset_name
+    return ctx
 
 def main():
-    # ===== Config (yours, unchanged) =====
-    model_name = "meta-llama/Llama-2-7b-hf"
-    dataset_name = "sahil2801/CodeAlpaca-20k"
-    output_dir = "./opt67b_codealpaca_zero3"
-
+    # -------- training config (static defaults; override via run_config if you want) --------
     max_seq_length = 512
     per_device_train_batch_size = 1
     gradient_accumulation_steps = 16
@@ -45,44 +83,44 @@ def main():
     warmup_ratio = 0.03
     lr_scheduler_type = "cosine"
     logging_steps = 10
-    save_steps = 500
-    save_total_limit = 2
     eval_steps = 250
     seed = 42
-
     bf16 = True
     fp16 = False
     gradient_checkpointing = True
     attn_impl = "sdpa"
     packing = False
+    optim_name = "adamw_torch"
+    deepspeed_cfg = "ds_zero3_offload.json"  # ensure this path exists
 
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    ctx = resolve_ctx()
+    partition_id   = ctx["partition_id"]
+    num_partitions = ctx["num_partitions"]
+    model_name     = ctx["model_name"]
+    dataset_name   = ctx["dataset_name"]
 
-    # ===== Dataset (yours) =====
-    raw = load_dataset(dataset_name, split="train[:5]").shuffle(seed=seed)
-    train = raw.map(lambda ex: {"text": format_row(ex)}, remove_columns=raw.column_names)
-    eval_ds = train
+    # -------- dataset/tokenizer via your existing API --------
+    client_trainset = load_data(partition_id, num_partitions, dataset_name)
+    tokenizer, data_collator, formatting_prompts_func = (
+        get_tokenizer_and_data_collator_and_propt_formatting(model_name)
+    )
 
-    # ===== Tokenizer =====
-    tok = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-    if tok.pad_token is None:
-        tok.pad_token = tok.eos_token
-    tok.padding_side = "right"
-
-    # ===== Model: use HF API to load either from SHM_DIR or base model =====
-    load_path = SHM_DIR if Path(SHM_DIR, "config.json").exists() else model_name
+    # -------- model: load from SHM checkpoint if present, else base model --------
+    load_path = Path(SHM_DIR) if (Path(SHM_DIR) / "config.json").exists() else model_name
     model = AutoModelForCausalLM.from_pretrained(
         load_path,
-        torch_dtype=torch.bfloat16 if bf16 else torch.float16 if fp16 else None,
+        torch_dtype=(torch.bfloat16 if bf16 else torch.float16 if fp16 else None),
         low_cpu_mem_usage=True,
         attn_implementation=attn_impl,
+        trust_remote_code=True,
     )
     if gradient_checkpointing:
         model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
         model.config.use_cache = False
 
-    # ===== TrainingArguments (yours) =====
-    optim_name = "adamw_torch"
+    # -------- training args --------
+    output_dir = "./opt67b_codealpaca_zero3"
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
     targs = TrainingArguments(
         output_dir=output_dir,
         num_train_epochs=num_train_epochs,
@@ -93,66 +131,56 @@ def main():
         warmup_ratio=warmup_ratio,
         lr_scheduler_type=lr_scheduler_type,
         logging_steps=logging_steps,
-        eval_strategy="steps",
-        eval_steps=eval_steps,
-        eval_accumulation_steps=1,
+        eval_strategy="no",
         bf16=bf16,
         fp16=fp16,
         optim=optim_name,
         report_to=["none"],
         seed=seed,
         ddp_find_unused_parameters=False,
-        deepspeed="ds_zero3_offload.json",
+        deepspeed=deepspeed_cfg,
         save_strategy="no",
         save_total_limit=0,
     )
 
-    # ===== Trainer =====
+    # -------- SFTTrainer: use your formatting func (so DO NOT set dataset_text_field) --------
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tok,
-        train_dataset=train,
-        eval_dataset=eval_ds,
+        tokenizer=tokenizer,
+        train_dataset=client_trainset,
         args=targs,
         max_seq_length=max_seq_length,
         packing=packing,
-        dataset_text_field="text",
+        data_collator=data_collator,
+        formatting_func=formatting_prompts_func,
     )
 
     results = trainer.train()
-    #print("Training completed. Results:", results.training_loss)
-    # metrics = trainer.evaluate()
-    # if "eval_loss" in metrics and metrics["eval_loss"] is not None:
-    #     try:
-    #         metrics["perplexity"] = math.exp(metrics["eval_loss"])
-    #     except OverflowError:
-    #         metrics["perplexity"] = float("inf")
-    # with open(Path(output_dir) / "eval_metrics.json", "w") as f:
-    #     json.dump(metrics, f, indent=2)
-    # print("Final eval (train-as-eval):", metrics)
 
-    # ===== Save back to SHM via HF API (rank-0 only) =====
-    
+    # -------- atomic save to SHM + write loss (rank0 only) --------
     tmp_dir = Path(SHM_DIR).with_name(Path(SHM_DIR).name + f"_tmp_{int(time.time())}")
     if is_rank0():
         tmp_dir.mkdir(parents=True, exist_ok=True)
-        # save model + tokenizer
-    trainer.save_model(tmp_dir)      # saves model + config
-        #tok.save_pretrained(tmp_dir)     # ensure tokenizer artifacts are there too
-        # swap-in atomically (best effort)
+    trainer.save_model(tmp_dir)  # save model + config
+        # tokenizer.save_pretrained(tmp_dir)  # optional, if not already in tmp_dir
     if is_rank0():
+        # swap in
         if Path(SHM_DIR).exists():
             shutil.rmtree(SHM_DIR)
         shutil.move(str(tmp_dir), SHM_DIR)
         print(f"[rank0] Saved updated checkpoint to {SHM_DIR}")
+
+        # write loss next to checkpoint to avoid cross-client collisions
         loss_file = Path("/dev/shm/loss.txt")
-        if not loss_file.exists():
-            with open(loss_file, "w") as f:
-                f.write("0.0\n")   # initialize with a default loss value
         with open(loss_file, "w") as f:
             f.write(f"{results.training_loss}\n")
         print(f"[rank0] Wrote train_loss={results.training_loss} to {loss_file}")
-    barrier()  # let rank-0 finish saving first
+
+        # optional: write metrics json
+        (Path(SHM_DIR) / "metrics.json").write_text(json.dumps(
+            {"train_loss": float(results.training_loss)}, indent=2
+        ))
+    barrier()
 
 if __name__ == "__main__":
     main()

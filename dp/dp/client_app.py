@@ -95,6 +95,7 @@ class FullHFClient(NumPyClient):
         return mdl.get_parameters(self.model)
 
     def fit(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[NDArrays, int, Dict]:
+
         # 1) load global params into local model
         mdl.set_parameters(self.model, parameters)
 
@@ -104,14 +105,32 @@ class FullHFClient(NumPyClient):
         save_hf_ckpt_from_model(self.model.cpu(), self.model_name, self.shm_dir)
 
         # 3) run a single training/eval round via torchrun ds_trl.py
+        # build args for ds_trl.py from Context-derived values
+        ds_args = [
+            "--partition-id", str(self.partition_id),
+            "--num-partitions", str(self.num_partitions),
+            "--num-rounds", str(self.num_rounds),
+            "--model-name", self.model_name,
+            "--dataset-name", getattr(self.cfg.dataset, "name", "unknown"),
+        ] 
+
         env = os.environ.copy()
         env.setdefault("TRITON_CACHE_DIR", "/dev/shm/triton_cache")
         env.setdefault("MASTER_PORT", self.master_port)
         env["SHM_DIR"] = str(self.shm_dir)
+        env["FL_PARTITION_ID"] = str(self.partition_id)   # env fallback
+        env["FL_NUM_PARTITIONS"] = str(self.num_partitions)
+        env["FL_NUM_ROUNDS"] = str(self.num_rounds)
 
-        cmd = [sys.executable, "-m", "torch.distributed.run", f"--nproc_per_node={self.nproc}", "lora/dp/dp/ds_trl.py"]
-        print(f"[client {self.partition_id}] launching: {' '.join(cmd)}  (SHM_DIR={self.shm_dir})")
+        cmd = [
+            sys.executable, "-m", "torch.distributed.run",
+            f"--nproc_per_node={self.nproc}",
+            "lora/dp/dp/ds_trl.py",
+            *ds_args,  # <-- args go to ds_trl.py
+        ]
+        print(f"[client {self.partition_id}] launching: {' '.join(cmd)} (SHM_DIR={self.shm_dir})")
         ret = subprocess.call(cmd, env=env)
+
         if ret != 0:
             raise RuntimeError(f"ds_trl.py failed with exit {ret}")
 
