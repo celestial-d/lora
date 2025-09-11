@@ -34,7 +34,7 @@ clientapp = "lora.client_app:app"
 
 [tool.flwr.app.config]
 dataset.name = "sahil2801/CodeAlpaca-20k"
-model.name = "facebook/opt125m"
+model.name = "facebook/opt-125m"
 model.quantization = 4
 model.gradient-checkpointing = true
 model.lora.peft-lora-r = 32
