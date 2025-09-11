@@ -33,8 +33,8 @@ serverapp = "lora.server_app:app"
 clientapp = "lora.client_app:app"
 
 [tool.flwr.app.config]
-dataset.name = "vicgalle/alpaca-gpt4"
-model.name = "openlm-research/open_llama_3b_v2"
+dataset.name = "sahil2801/CodeAlpaca-20k"
+model.name = "facebook/opt125m"
 model.quantization = 4
 model.gradient-checkpointing = true
 model.lora.peft-lora-r = 32
