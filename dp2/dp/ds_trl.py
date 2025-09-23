@@ -296,7 +296,18 @@ def main():
 
     in_dir = Path(SHM_DIR) / "in_stream"
     if is_rank0():
+        t_in_start = time.time()
         read_stream_into_model(model, in_dir)
+        t_in_end = time.time()
+        # bytes_in = 0
+        # for p in in_dir.glob("chunk_*.safetensors"):
+        #     try:
+        #         bytes_in += p.stat().st_size
+        #     except Exception:
+        #         pass
+        # print(f"[ds_trl][rank0] ✅ input stream written in {t_in_end - t_in_start:.3f}s "
+        #       f"(~{bytes_in} bytes)")
+        print(f"[ds_trl][rank0] ✅ input stream written in {t_in_end - t_in_start:.3f}s ")
     barrier()
 
     # Trainer args (no full HF saves)
@@ -340,12 +351,24 @@ def main():
     # IMPORTANT: all ranks participate in ZeRO gathers; only rank0 writes.
     out_dir = Path(SHM_DIR) / "out_stream"
     print(f"[ds_trl] Starting streamed write on all ranks (writer=0).")
+    if is_rank0():
+        t_out_start = time.time()
     write_streamed_safetensors(model, out_dir, writer_rank=0,
                                max_chunk_bytes=STREAM_CHUNK_BYTES,
                                window_size=STREAM_WINDOW_SIZE)
-
+    if is_rank0():
+        t_out_end = time.time()
     if is_rank0():
         # metrics for client
+        # bytes_out = 0
+        # for p in out_dir.glob("chunk_*.safetensors"):
+        #     try:
+        #         bytes_out += p.stat().st_size
+        #     except Exception:
+        #         pass
+        # print(f"[ds_trl][rank0] ✅ Output stream written in {t_out_end - t_out_start:.3f}s "
+        #       f"(~{bytes_out} bytes)")
+        print(f"[ds_trl][rank0] ✅ Output stream written in {t_out_end - t_out_start:.3f}s ")
         Path("/dev/shm/loss.txt").write_text(f"{results.training_loss}\n")
         (Path(SHM_DIR) / "metrics.json").write_text(
             json.dumps({"train_loss": float(results.training_loss)}, indent=2)
