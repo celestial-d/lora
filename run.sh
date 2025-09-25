@@ -3,6 +3,9 @@ pip install -e .
 pip install pydantic==2.11.7
 copy ds_zero3_offload.json from the repo
 
+#for polaris all nodes
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+
 #host
 flower-superlink --insecure
 
