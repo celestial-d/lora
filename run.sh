@@ -4,6 +4,14 @@ pip install pydantic==2.11.7
 copy ds_zero3_offload.json from the repo
 
 #for polaris all nodes
+#error:
+
+grpc._channel._InactiveRpcError: <_InactiveRpcError of RPC that terminated with:
+        status = StatusCode.UNAVAILABLE
+        details = "failed to connect to all addresses; last error: UNKNOWN: ipv4:140.221.69.69:3128: HTTP proxy returned response code 403"
+        debug_error_string = "UNKNOWN:Error received from peer  {grpc_status:14, grpc_message:"failed to connect to all addresses; last error: UNKNOWN: ipv4:140.221.69.69:3128: HTTP proxy returned response code 403"}"
+        
+#solution:
 unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
 
 #host
