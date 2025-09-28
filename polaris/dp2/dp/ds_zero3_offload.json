@@ -1,0 +1,23 @@
+{
+  "train_micro_batch_size_per_gpu": 1,
+  "gradient_accumulation_steps": 128,
+
+  "zero_optimization": {
+    "stage": 3,
+    "reduce_scatter": true,                   
+    "allgather_partitions": true,            
+    "overlap_comm": true,
+    "contiguous_gradients": true,
+    "reduce_bucket_size": 268435456,
+    "allgather_bucket_size": 268435456,       
+    "stage3_prefetch_bucket_size": 268435456,
+    "stage3_param_persistence_threshold": 0,
+    "zero3_gather_16bit_weights_on_model_save": false  
+  },
+
+  "bf16": { "enabled": true },
+  "gradient_clipping": 1.0,
+  "zero_allow_untested_optimizer": true,
+  "steps_per_print": 100,
+  "wall_clock_breakdown": false
+}

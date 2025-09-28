@@ -1,0 +1,70 @@
+[92mINFO [0m:      Starting Flower SuperLink
+[93mWARNING [0m:   Option `--insecure` was set. Starting insecure HTTP server with unencrypted communication (TLS disabled). Proceed only if you understand the risks.
+[92mINFO [0m:      Flower Deployment Runtime: Starting Control API on 0.0.0.0:9093
+[92mINFO [0m:      Flower Deployment Runtime: Starting ServerAppIo API on 0.0.0.0:9091
+[92mINFO [0m:      Flower Deployment Runtime: Starting Fleet API (gRPC-rere) on 0.0.0.0:9092
+[92mINFO [0m:      Starting Flower SuperExec
+[92mINFO [0m:      [Fleet.CreateNode] Request heartbeat_interval=30.0
+[92mINFO [0m:      [Fleet.CreateNode] Created node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.CreateNode] Request heartbeat_interval=30.0
+[92mINFO [0m:      [Fleet.CreateNode] Created node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      ControlServicer.StartRun
+[92mINFO [0m:      Created run 17015942409503067987
+[92mINFO [0m:      Starting logstream for run_id `17015942409503067987`
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      Starting run 17015942409503067987
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.GetRun] Requesting `Run` for run_id=17015942409503067987
+[92mINFO [0m:      [Fleet.GetFab] Requesting FAB for fab_hash=ed56974ac8b2213024b51641ea7c3fc7e9f0581eead0dfe7bf167c5adfff8d69
+[92mINFO [0m:      [Fleet.GetRun] Requesting `Run` for run_id=17015942409503067987
+[92mINFO [0m:      [Fleet.GetFab] Requesting FAB for fab_hash=ed56974ac8b2213024b51641ea7c3fc7e9f0581eead0dfe7bf167c5adfff8d69
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      [Fleet.PushMessages] Push replies from node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PushMessages] Push replies from node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      ControlServicer.StreamLogs
+[92mINFO [0m:      [Fleet.PushMessages] Push replies from node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PushMessages] Push replies from node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241
+[92mINFO [0m:      All logs for run ID `17015942409503067987` returned
+[92mINFO [0m:      [Fleet.PullMessages] node_id=16835914552978287238
+[92mINFO [0m:      [Fleet.PullMessages] node_id=2907139232722057241

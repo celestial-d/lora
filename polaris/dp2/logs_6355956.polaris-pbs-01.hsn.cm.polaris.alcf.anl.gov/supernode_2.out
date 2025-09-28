@@ -1,0 +1,310 @@
+Client IP: 10.140.57.88
+[92mINFO [0m:      Starting Flower SuperNode
+[93mWARNING [0m:   Option `--insecure` was set. Starting insecure HTTP channel to 10.140.57.90:9092.
+[92mINFO [0m:      Flower Deployment Runtime: Starting ClientAppIo API on 127.0.0.1:9093
+[92mINFO [0m:      Starting Flower SuperExec
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17015942409503067987, ROUND 1]
+[92mINFO [0m:      Received: train message 7dc30e9c8ee6ece8ce3f28e5db681d6599568b41a81d6e41b4b0240194a3193d
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      [flwr-clientapp] Pull `ClientAppInputs` for token cdb3...1b04
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[2025-09-27 07:58:09,569] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 07:58:09,571] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 07:58:09,586] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 07:58:09,699] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 07:58:14,580] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+[2025-09-27 07:58:14,588] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+[2025-09-27 07:58:14,596] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+[2025-09-27 07:58:14,620] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+[ds_trl] Waiting for input stream at /dev/shm/llama7b_client_1/in_stream
+[2025-09-27 07:58:21,923] [INFO] [comm.py:821:init_distributed] cdb=None
+[2025-09-27 07:58:21,926] [INFO] [comm.py:821:init_distributed] cdb=None
+[2025-09-27 07:58:21,936] [INFO] [comm.py:821:init_distributed] cdb=None
+[rank3]:[W927 07:58:22.206429835 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 3]  using GPU 3 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[rank1]:[W927 07:58:22.206513913 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[rank2]:[W927 07:58:22.206582852 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[ds_trl] Input stream applied (1 chunks).
+[ds_trl][rank0] ✅ input stream written in 0.277s 
+[2025-09-27 07:58:22,199] [INFO] [comm.py:821:init_distributed] cdb=None
+[2025-09-27 07:58:22,199] [INFO] [comm.py:852:init_distributed] Initializing TorchBackend in DeepSpeed with backend nccl
+[rank0]:[W927 07:58:22.595218397 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+Gradient accumulation steps mismatch: GradientAccumulationPlugin has 1, DeepSpeed config has 16. Using DeepSpeed's value.
+Parameter Offload - Persistent parameters statistics: param_count = 122, numel = 121344
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:31<04:12, 31.60s/it] 22%|██▏       | 2/9 [00:51<02:53, 24.83s/it] 33%|███▎      | 3/9 [01:10<02:13, 22.23s/it] 44%|████▍     | 4/9 [01:29<01:44, 20.94s/it] 56%|█████▌    | 5/9 [01:48<01:21, 20.27s/it] 67%|██████▋   | 6/9 [02:08<01:00, 20.11s/it] 78%|███████▊  | 7/9 [02:28<00:39, 19.98s/it] 89%|████████▉ | 8/9 [02:48<00:19, 19.90s/it]100%|██████████| 9/9 [03:07<00:00, 19.82s/it][ds_trl] Starting streamed write on all ranks (writer=0).
+[ds_trl] Starting streamed write on all ranks (writer=0).
+{'train_runtime': 187.7761, 'train_samples_per_second': 53.313, 'train_steps_per_second': 0.048, 'train_loss': 2.199743906656901, 'epoch': 0.92}
+                                             100%|██████████| 9/9 [03:07<00:00, 19.82s/it]100%|██████████| 9/9 [03:07<00:00, 20.86s/it]
+[ds_trl] Starting streamed write on all ranks (writer=0).
+[ds_trl] Starting streamed write on all ranks (writer=0).
+[ds_trl][writer rank=0] Output stream written (1 chunks) to /dev/shm/llama7b_client_1/out_stream
+[ds_trl][rank0] ✅ Output stream written in 1.210s 
+[rank0] Train done. train_loss=2.199743906656901. Streamed to /dev/shm/llama7b_client_1/out_stream
+[92mINFO [0m:      [flwr-clientapp] Push `ClientAppOutputs` for token cdb3...1b04
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17015942409503067987, ROUND 1]
+[92mINFO [0m:      Sending: train message
+[client 1] launching: /lus/eagle/projects/SR-APPFL/duo/env/new_flwr/bin/python3.10 -m torch.distributed.run --nproc_per_node=4 /home/zhangduo4610/.flwr/apps/flwrlabs.DeepSpeed_FL.1.0.0.ed56974a/dp/ds_trl.py --partition-id 1 --num-partitions 2 --num-rounds 2 --model-name /home/zhangduo4610/opt-125m --dataset-name /home/zhangduo4610/CodeAlpaca-20k (SHM_DIR=/dev/shm/llama7b_client_1)
+[client] STREAM OUT → ds_trl: writing initial weights to /dev/shm/llama7b_client_1/in_stream
+[client] Waiting for streamed updated weights at /dev/shm/llama7b_client_1/out_stream
+[client] STREAM mode complete.
+[92mINFO [0m:      Sent successfully
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17015942409503067987, ROUND 2]
+[92mINFO [0m:      Received: train message 45e290278209121c8f8eaf1b2df40ed2cb304df08443e47fd4a6e552d57ee331
+[92mINFO [0m:      Start `flwr-clientapp` process
+[92mINFO [0m:      [flwr-clientapp] Pull `ClientAppInputs` for token 4019...6b8a
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Using CXX=/usr/bin/g++-12
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[ds_trl] Triton cache env TRITON_CACHE_DIR = /home/zhangduo4610/.cache_ds/triton
+[2025-09-27 08:02:27,939] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 08:02:27,942] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 08:02:27,951] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 08:02:28,289] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+[2025-09-27 08:02:32,856] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+[2025-09-27 08:02:32,862] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+[2025-09-27 08:02:32,868] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+[2025-09-27 08:02:33,283] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+
+========== ds_trl.py STREAM_PROTOCOL = ON (double-buffered safetensors) ==========
+
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/flwr_datasets/utils.py:109: UserWarning: The currently tested dataset are ['mnist', 'ylecun/mnist', 'cifar10', 'uoft-cs/cifar10', 'fashion_mnist', 'zalando-datasets/fashion_mnist', 'sasha/dog-food', 'zh-plus/tiny-imagenet', 'scikit-learn/adult-census-income', 'cifar100', 'uoft-cs/cifar100', 'svhn', 'ufldl-stanford/svhn', 'sentiment140', 'stanfordnlp/sentiment140', 'speech_commands', 'LIUM/tedlium', 'flwrlabs/femnist', 'flwrlabs/ucf101', 'flwrlabs/ambient-acoustic-context', 'jlh/uci-mushrooms', 'Mike0307/MNIST-M', 'flwrlabs/usps', 'scikit-learn/iris', 'flwrlabs/pacs', 'flwrlabs/cinic10', 'flwrlabs/caltech101', 'flwrlabs/office-home', 'flwrlabs/fed-isic2019']. Given: /home/zhangduo4610/CodeAlpaca-20k.
+  warnings.warn(
+[ds_trl] Waiting for input stream at /dev/shm/llama7b_client_1/in_stream
+[2025-09-27 08:02:39,858] [INFO] [comm.py:821:init_distributed] cdb=None
+[2025-09-27 08:02:39,892] [INFO] [comm.py:821:init_distributed] cdb=None
+[ds_trl] Input stream applied (1 chunks).
+[ds_trl][rank0] ✅ input stream written in 0.765s 
+[2025-09-27 08:02:39,956] [INFO] [comm.py:821:init_distributed] cdb=None
+[2025-09-27 08:02:39,956] [INFO] [comm.py:852:init_distributed] Initializing TorchBackend in DeepSpeed with backend nccl
+[rank1]:[W927 08:02:39.034487178 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 1]  using GPU 1 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[rank2]:[W927 08:02:39.059121593 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 2]  using GPU 2 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[2025-09-27 08:02:40,535] [INFO] [comm.py:821:init_distributed] cdb=None
+[rank3]:[W927 08:02:40.678696582 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 3]  using GPU 3 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+[rank0]:[W927 08:02:40.792024854 ProcessGroupNCCL.cpp:4715] [PG ID 0 PG GUID 0 Rank 0]  using GPU 0 as device used by this process is currently unknown. This can potentially cause a hang if this rank to GPU mapping is incorrect. You can pecify device_id in init_process_group() to force use of a particular device.
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+/lus/eagle/projects/SR-APPFL/duo/env/new_flwr/lib/python3.10/site-packages/trl/trainer/sft_trainer.py:322: FutureWarning: `tokenizer` is deprecated and will be removed in version 5.0.0 for `SFTTrainer.__init__`. Use `processing_class` instead.
+  super().__init__(
+Gradient accumulation steps mismatch: GradientAccumulationPlugin has 1, DeepSpeed config has 16. Using DeepSpeed's value.
+Parameter Offload - Persistent parameters statistics: param_count = 122, numel = 121344
+  0%|          | 0/9 [00:00<?, ?it/s] 11%|█         | 1/9 [00:24<03:15, 24.50s/it] 22%|██▏       | 2/9 [00:43<02:29, 21.38s/it] 33%|███▎      | 3/9 [01:02<02:01, 20.31s/it] 44%|████▍     | 4/9 [01:22<01:39, 19.95s/it] 56%|█████▌    | 5/9 [01:41<01:19, 19.76s/it] 67%|██████▋   | 6/9 [02:01<00:59, 19.82s/it] 78%|███████▊  | 7/9 [02:21<00:39, 19.85s/it] 89%|████████▉ | 8/9 [02:41<00:19, 19.82s/it]100%|██████████| 9/9 [03:01<00:00, 19.88s/it][ds_trl] Starting streamed write on all ranks (writer=0).
+[ds_trl] Starting streamed write on all ranks (writer=0).
+[ds_trl] Starting streamed write on all ranks (writer=0).
+{'train_runtime': 181.1904, 'train_samples_per_second': 55.251, 'train_steps_per_second': 0.05, 'train_loss': 1.9902557796902127, 'epoch': 0.92}
+                                             100%|██████████| 9/9 [03:01<00:00, 19.88s/it]100%|██████████| 9/9 [03:01<00:00, 20.13s/it]
+[ds_trl] Starting streamed write on all ranks (writer=0).
+[ds_trl][writer rank=0] Output stream written (1 chunks) to /dev/shm/llama7b_client_1/out_stream
+[ds_trl][rank0] ✅ Output stream written in 1.294s 
+[rank0] Train done. train_loss=1.9902557796902127. Streamed to /dev/shm/llama7b_client_1/out_stream
+[92mINFO [0m:      [flwr-clientapp] Push `ClientAppOutputs` for token 4019...6b8a
+[92mINFO [0m:      
+[92mINFO [0m:      [RUN 17015942409503067987, ROUND 2]
+[92mINFO [0m:      Sending: train message
+[client 1] launching: /lus/eagle/projects/SR-APPFL/duo/env/new_flwr/bin/python3.10 -m torch.distributed.run --nproc_per_node=4 /home/zhangduo4610/.flwr/apps/flwrlabs.DeepSpeed_FL.1.0.0.ed56974a/dp/ds_trl.py --partition-id 1 --num-partitions 2 --num-rounds 2 --model-name /home/zhangduo4610/opt-125m --dataset-name /home/zhangduo4610/CodeAlpaca-20k (SHM_DIR=/dev/shm/llama7b_client_1)
+[client] STREAM OUT → ds_trl: writing initial weights to /dev/shm/llama7b_client_1/in_stream
+[client] Waiting for streamed updated weights at /dev/shm/llama7b_client_1/out_stream
+[client] STREAM mode complete.
+[92mINFO [0m:      Sent successfully
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.39 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.63 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.16 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.93 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.50 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.30 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.42 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.54 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.07 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 9.42 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.54 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.07 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 17.37 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.42 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.95 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.15 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.97 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.74 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.29 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.26 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.16 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 13.08 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.89 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.87 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.62 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.65 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.68 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 6.41 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 16.95 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.03 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.82 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.02 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.37 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.71 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.12 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 9.62 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.64 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 13.72 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.73 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.83 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.11 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.48 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 14.52 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.72 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.01 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 19.16 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.47 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.63 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 6.59 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 11.90 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.80 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.47 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.00 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.87 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 14.56 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.16 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.24 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 6.73 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.75 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.60 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.53 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.44 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 19.98 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 9.46 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.68 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.30 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 16.21 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.44 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 9.99 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.22 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 19.08 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.47 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.04 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.19 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.43 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 17.84 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 13.52 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 6.59 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.72 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 17.43 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.34 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.17 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 14.01 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.04 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 17.32 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.97 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 11.82 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.95 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 11.02 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.99 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.49 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.87 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.76 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.43 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.00 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.81 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 16.73 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.80 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.11 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.58 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.12 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 6.21 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 16.89 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 13.53 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.82 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 17.89 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 17.93 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.73 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.92 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 0.44 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.33 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.31 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 1.86 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.22 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.15 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.87 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.03 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 18.92 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 6.72 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.52 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.61 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 8.55 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 7.74 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 3.75 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 19.68 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.00 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 11.80 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 5.52 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 16.26 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 16.42 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 2.05 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.23 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 6.21 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 4.84 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 10.02 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 15.13 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.78 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 9.31 seconds
+[93mWARNING [0m:   Connection attempt failed, retrying in 12.28 seconds
